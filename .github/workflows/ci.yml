@@ -99,7 +99,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ninja-build ccache ${{ matrix.cc }}
 
       - name: Setup ccache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .ccache
           key: v1-ccache-${{ runner.os }}-${{ matrix.preset }}-${{ hashFiles('CMakeLists.txt', 'src/CMakeLists.txt') }}
@@ -107,7 +107,7 @@ jobs:
             v1-ccache-${{ runner.os }}-${{ matrix.preset }}-
 
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: build-${{ matrix.preset }}/_deps
           key: deps-${{ matrix.preset }}-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
@@ -142,7 +142,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ninja-build ccache g++-14
 
       - name: Setup ccache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .ccache
           key: v1-ccache-${{ runner.os }}-openmp-gcc-14-${{ hashFiles('CMakeLists.txt', 'src/CMakeLists.txt') }}
@@ -150,7 +150,7 @@ jobs:
             v1-ccache-${{ runner.os }}-openmp-gcc-14-
 
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: build-openmp-gcc-14/_deps
           key: deps-openmp-gcc-14-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
@@ -183,7 +183,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ninja-build g++-14
 
       - name: Setup ccache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .ccache
           key: v1-ccache-${{ runner.os }}-serial-asan-${{ hashFiles('CMakeLists.txt', 'src/CMakeLists.txt') }}
@@ -191,7 +191,7 @@ jobs:
             v1-ccache-${{ runner.os }}-serial-asan-
 
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: build-serial-asan/_deps
           key: deps-serial-asan-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
