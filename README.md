@@ -3,8 +3,11 @@
 Subsetix Kokkos - Geometry processing library with Kokkos parallel backend.
 
 [![CI](https://github.com/sbstndb/subsetix_kokkos_2/workflows/CI/badge.svg)](https://github.com/sbstndb/subsetix_kokkos_2/actions)
+[![Format](https://img.shields.io/badge/code%20style-clang--format-blue.svg)](https://github.com/sbstndb/subsetix_kokkos_2/blob/main/.clang-format)
+[![Lint](https://img.shields.io/badge/static%20analysis-clang--tidy-blue.svg)](https://github.com/sbstndb/subsetix_kokkos_2/blob/main/.clang-tidy)
 [![License: BSD 3-Clause](https://img.shields.io/badge/License-BSD_3-Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://en.cppreference.com/w/cpp/20)
+[![REUSE](https://reuse.software/badges/v3/index.svg)](https://reuse.software/)
 
 ## Table of Contents
 

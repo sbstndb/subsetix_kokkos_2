@@ -265,3 +265,68 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Generate HTML coverage report
+        run: |
+          genhtml coverage.info --output-directory coverage_html --gcov-tool gcov-14 --legend --title "Subsetix Kokkos Coverage"
+
+      - name: Upload coverage HTML as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html-report
+          path: coverage_html/
+          retention-days: 30
+
+  # ============================================================================
+  # Valgrind Memory Leak Detection
+  # ============================================================================
+  valgrind:
+    name: Valgrind (Memory Leaks)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build g++-14 valgrind
+
+      - name: Setup ccache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: v1-ccache-${{ runner.os }}-valgrind-${{ hashFiles('CMakeLists.txt', 'src/CMakeLists.txt') }}
+          restore-keys: |
+            v1-ccache-${{ runner.os }}-valgrind-
+
+      - name: Cache dependencies
+        uses: actions/cache@v5
+        with:
+          path: build-serial/_deps
+          key: deps-valgrind-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
+          restore-keys: |
+            deps-valgrind-
+
+      - name: Configure CMake with debug symbols
+        run: cmake --preset serial -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-g -O0"
+
+      - name: Build
+        run: cmake --build --preset serial -- -j$(nproc)
+
+      - name: Run tests with Valgrind
+        run: |
+          valgrind \
+            --leak-check=full \
+            --show-leak-kinds=all \
+            --track-origins=yes \
+            --verbose \
+            --log-file=valgrind-out.txt \
+            --error-exitcode=1 \
+            ./build-serial/tests/subsetix_test_main
+
+      - name: Upload Valgrind log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: valgrind-log
+          path: valgrind-out.txt
+          retention-days: 7

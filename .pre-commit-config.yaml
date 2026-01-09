@@ -82,6 +82,13 @@ repos:
         files: \.(hpp|cpp|h|cc|c)$
         pass_filenames: false
 
+  # REUSE compliance checking for license headers
+  - repo: https://github.com/fsfe/reuse-tool
+    rev: v5.0.2
+    hooks:
+      - id: reuse
+        exclude: '^(build-|\.github/|_deps/)'
+
 # CI configuration
 ci:
   autofix_commit_msg: |

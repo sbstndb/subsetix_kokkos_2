@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2025 Subsetix Kokkos Contributors
+// SPDX-License-Identifier: BSD-3-Clause
+
 #include <vector>
 
 #include <Kokkos_Core.hpp>
