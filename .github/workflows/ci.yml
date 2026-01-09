@@ -247,7 +247,7 @@ jobs:
           LINE_COV=$(lcov --summary coverage.info 2>&1 | grep "lines" | grep -oP '\d+\.\d+(?=%)' || echo "0.0")
           echo "Line coverage: ${LINE_COV}%"
 
-          MIN_COVERAGE=20.0
+          MIN_COVERAGE=60.0
           if (( $(echo "$LINE_COV < $MIN_COVERAGE" | bc -l) )); then
             echo "::error::Coverage ${LINE_COV}% is below minimum ${MIN_COVERAGE}%"
             exit 1
