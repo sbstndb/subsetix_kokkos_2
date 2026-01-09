@@ -241,6 +241,19 @@ jobs:
           lcov --remove coverage.info '*/_deps/*' --output-file coverage.info --gcov-tool gcov-14
           lcov --list coverage.info --gcov-tool gcov-14
 
+      - name: Check coverage threshold (quality gate)
+        run: |
+          echo "Checking coverage quality gate..."
+          LINE_COV=$(lcov --summary coverage.info 2>&1 | grep "lines" | grep -oP '\d+\.\d+(?=%)' || echo "0.0")
+          echo "Line coverage: ${LINE_COV}%"
+
+          MIN_COVERAGE=20.0
+          if (( $(echo "$LINE_COV < $MIN_COVERAGE" | bc -l) )); then
+            echo "::error::Coverage ${LINE_COV}% is below minimum ${MIN_COVERAGE}%"
+            exit 1
+          fi
+          echo "::notice::Coverage ${LINE_COV}% meets minimum ${MIN_COVERAGE}% threshold"
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
