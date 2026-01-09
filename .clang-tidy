@@ -44,6 +44,7 @@ Checks: >
   -readability-identifier-length,
   -readability-function-cognitive-complexity,
   -readability-function-size,
+  -readability-identifier-naming,
   # Memory safety checks
   -bugprone-unused-return-value,
   cert-dcl54-cpp, # Check for forward declarations with different default args
@@ -51,51 +52,9 @@ Checks: >
 
 # Check options
 CheckOptions:
-  # Key naming
-  - key: readability-identifier-naming.ClassCase
-    value: CamelCase
-  - key: readability-identifier-naming.StructCase
-    value: CamelCase
-  - key: readability-identifier-naming.FunctionCase
-    value: camelBack
-  - key: readability-identifier-naming.VariableCase
-    value: camelBack
-  - key: readability-identifier-naming.ParameterCase
-    value: camelBack
-  - key: readability-identifier-naming.MemberCase
-    value: camelBack
-  - key: readability-identifier-naming.PrivateMemberPrefix
-    value: ''
-  - key: readability-identifier-naming.ProtectedMemberPrefix
-    value: ''
-  - key: readability-identifier-naming.ProtectedMemberCase
-    value: camelBack
-  - key: readability-identifier-naming.PublicMemberCase
-    value: camelBack
-  - key: readability-identifier-naming.EnumConstantCase
-    value: CamelCase
-  - key: readability-identifier-naming.ConstantCase
-    value: UPPER_CASE
-  - key: readability-identifier-naming.GlobalConstantCase
-    value: UPPER_CASE
-  - key: readability-identifier-naming.StaticConstantCase
-    value: UPPER_CASE
-  - key: readability-identifier-naming.NamespaceCase
-    value: CamelCase
-  - key: readability-identifier-naming.TemplateParameterCase
-    value: CamelCase
-  - key: readability-identifier-naming.ConceptCase
-    value: CamelCase
-  - key: readability-identifier-naming.MacroDefinitionCase
-    value: UPPER_CASE
-  - key: readability-identifier-naming.EnumCase
-    value: CamelCase
-
-  # Header guard
+  # Modernize
   - key: modernize-use-nullptr.NullMacros
     value: 'NULL'
-
-  # Modernize
   - key: modernize-use-nullptr.IgnoreMacros
     value: '1'
 
