@@ -49,7 +49,7 @@ jobs:
           # Only analyze files from our project (exclude _deps)
           run-clang-tidy-18 -p build-serial-clang-18 \
             -warnings-as-errors '*' -header-filter='^subsetix/' -quiet \
-            $(find build-serial-clang-18 -name '*.cpp' -path '*/tests/*' -o -path '*/benchmarks/*' -o -path '*/src/*')
+            $(find build-serial-clang-18 -name '*.cpp' -not -path '*/_deps/*')
 
   # ============================================================================
   # Compiler Matrix Tests
