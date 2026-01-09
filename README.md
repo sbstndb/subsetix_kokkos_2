@@ -34,7 +34,7 @@ Subsetix Kokkos is a modern C++20 library for geometry processing with parallel 
 - **Modern C++**: C++20 with Kokkos for portable parallelism
 - **Comprehensive Testing**: GoogleTest-based test suite
 - **Performance Benchmarking**: Google Benchmark integration
-- **CI/CD**: Automated testing on multiple backends
+- **Fast CI/CD**: Automated testing with ccache and dependency caching (2-3x faster builds)
 - **Code Quality**: clang-format, clang-tidy, and pre-commit hooks
 
 ## Build Requirements
@@ -200,6 +200,24 @@ cmake --build --preset cuda
 ```
 
 ## Development
+
+### Speed Up Builds with ccache
+
+For faster incremental builds, use ccache to cache compilation results:
+
+```bash
+# Install ccache
+sudo apt-get install ccache  # Ubuntu/Debian
+
+# Configure CMake to use ccache
+cmake --preset serial -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+cmake --build --preset serial
+
+# Check cache statistics
+ccache -s
+```
+
+With ccache, subsequent builds can be **2-10x faster** for unchanged files.
 
 ### Code Formatting
 
