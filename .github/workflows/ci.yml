@@ -266,7 +266,7 @@ jobs:
 
       - name: Generate HTML coverage report
         run: |
-          genhtml coverage.info --output-directory coverage_html --gcov-tool gcov-14 --legend --title "Subsetix Kokkos Coverage"
+          genhtml coverage.info --output-directory coverage_html --legend --title "Subsetix Kokkos Coverage"
 
       - name: Upload coverage HTML as artifact
         uses: actions/upload-artifact@v4
