@@ -238,7 +238,7 @@ Run clang-tidy for static analysis:
 ```bash
 cmake --preset serial -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 cmake --build --preset serial
-run-clang-tidy.py -p build-serial tests/ benchmarks/
+run-clang-tidy -p build-serial tests/ benchmarks/
 ```
 
 ### Adding Tests

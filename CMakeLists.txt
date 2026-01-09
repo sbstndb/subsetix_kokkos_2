@@ -18,6 +18,11 @@ option(SUBSETIX_KOKKOS_SERIAL "Enable Kokkos Serial backend" ON)
 option(SUBSETIX_KOKKOS_OPENMP "Enable Kokkos OpenMP backend" OFF)
 option(SUBSETIX_KOKKOS_CUDA "Enable Kokkos CUDA backend" OFF)
 
+# Validate that at least one backend is enabled
+if(NOT SUBSETIX_KOKKOS_SERIAL AND NOT SUBSETIX_KOKKOS_OPENMP AND NOT SUBSETIX_KOKKOS_CUDA)
+  message(FATAL_ERROR "At least one Kokkos backend must be enabled (SERIAL, OPENMP, or CUDA)")
+endif()
+
 option(SUBSETIX_BUILD_TESTS "Build tests" ON)
 option(SUBSETIX_BUILD_BENCHMARKS "Build benchmarks" ON)
 

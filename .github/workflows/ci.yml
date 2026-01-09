@@ -17,6 +17,7 @@ jobs:
   format-lint:
     name: Code Style Check
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -30,6 +31,7 @@ jobs:
   clang-tidy:
     name: Static Analysis (clang-tidy)
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -48,258 +50,93 @@ jobs:
   # ============================================================================
   # Compiler Matrix Tests
   # ============================================================================
-  # Serial Backend
-  serial-gcc-12:
-    name: Serial (GCC 12)
+  # Test matrix: compiler x backend
+  # serial-clang tests the default clang preset (issue #17 fix)
+  test:
+    name: Test (${{ matrix.backend }}, ${{ matrix.compiler }})
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Serial backend
+          - backend: serial
+            preset: serial-gcc-12
+            compiler: gcc-12
+            cc: gcc-12
+            cxx: g++-12
+          - backend: serial
+            preset: serial-gcc-14
+            compiler: gcc-14
+            cc: gcc-14
+            cxx: g++-14
+          - backend: serial
+            preset: serial-clang
+            compiler: clang
+            cc: clang
+            cxx: clang++
+          - backend: serial
+            preset: serial-clang-18
+            compiler: clang-18
+            cc: clang-18
+            cxx: clang++-18
+          # OpenMP backend
+          - backend: openmp
+            preset: openmp-gcc-12
+            compiler: gcc-12
+            cc: gcc-12
+            cxx: g++-12
+          - backend: openmp
+            preset: openmp-gcc-14
+            compiler: gcc-14
+            cc: gcc-14
+            cxx: g++-14
     steps:
       - uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y ninja-build ccache g++-12
-
-      # Cache ccache compilation cache
-      - name: Setup ccache
-        uses: actions/cache@v4
-        with:
-          path: .ccache
-          key: v1-ccache-${{ runner.os }}-serial-gcc-12-${{ hashFiles('CMakeLists.txt', 'src/CMakeLists.txt') }}
-          restore-keys: |
-            v1-ccache-${{ runner.os }}-serial-gcc-12-
-
-      # Cache FetchContent dependencies (Kokkos, GoogleTest, Google Benchmark)
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            build-serial-gcc-12/_deps
-            ~/.cache/ccache
-          key: deps-serial-gcc-12-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
-          restore-keys: |
-            deps-serial-gcc-12-
-
-      - name: Configure CMake
-        run: cmake --preset serial-gcc-12
-
-      - name: Build
-        run: cmake --build --preset serial-gcc-12 -- -j$(nproc)
-
-      - name: Run tests
-        run: ctest --preset serial-gcc-12 --output-on-failure
-
-      - name: Show ccache statistics
-        run: ccache -s || true
-
-  serial-gcc-14:
-    name: Serial (GCC 14)
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y ninja-build ccache g++-14
-
-      - name: Setup ccache
-        uses: actions/cache@v4
-        with:
-          path: .ccache
-          key: v1-ccache-${{ runner.os }}-serial-gcc-14-${{ hashFiles('CMakeLists.txt', 'src/CMakeLists.txt') }}
-          restore-keys: |
-            v1-ccache-${{ runner.os }}-serial-gcc-14-
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            build-serial-gcc-14/_deps
-            ~/.cache/ccache
-          key: deps-serial-gcc-14-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
-          restore-keys: |
-            deps-serial-gcc-14-
-
-      - name: Configure CMake
-        run: cmake --preset serial-gcc-14
-
-      - name: Build
-        run: cmake --build --preset serial-gcc-14 -- -j$(nproc)
-
-      - name: Run tests
-        run: ctest --preset serial-gcc-14 --output-on-failure
-
-      - name: Show ccache statistics
-        run: ccache -s || true
-
-  serial-clang-18:
-    name: Serial (Clang 18)
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y ninja-build ccache clang-18
+        run: sudo apt-get update && sudo apt-get install -y ninja-build ccache ${{ matrix.cc }}
 
       - name: Setup ccache
         uses: actions/cache@v4
         with:
           path: .ccache
-          key: v1-ccache-${{ runner.os }}-serial-clang-18-${{ hashFiles('CMakeLists.txt', 'src/CMakeLists.txt') }}
+          key: v1-ccache-${{ runner.os }}-${{ matrix.preset }}-${{ hashFiles('CMakeLists.txt', 'src/CMakeLists.txt') }}
           restore-keys: |
-            v1-ccache-${{ runner.os }}-serial-clang-18-
+            v1-ccache-${{ runner.os }}-${{ matrix.preset }}-
 
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
           path: |
-            build-serial-clang-18/_deps
+            build-${{ matrix.preset }}/_deps
             ~/.cache/ccache
-          key: deps-serial-clang-18-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
+          key: deps-${{ matrix.preset }}-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
           restore-keys: |
-            deps-serial-clang-18-
+            deps-${{ matrix.preset }}-
 
       - name: Configure CMake
-        run: cmake --preset serial-clang-18
+        run: cmake --preset ${{ matrix.preset }}
 
       - name: Build
-        run: cmake --build --preset serial-clang-18 -- -j$(nproc)
+        run: cmake --build --preset ${{ matrix.preset }} -- -j$(nproc)
 
       - name: Run tests
-        run: ctest --preset serial-clang-18 --output-on-failure
-
-      - name: Show ccache statistics
-        run: ccache -s || true
-
-  # OpenMP Backend
-  openmp-gcc-12:
-    name: OpenMP (GCC 12)
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y ninja-build ccache g++-12
-
-      - name: Setup ccache
-        uses: actions/cache@v4
-        with:
-          path: .ccache
-          key: v1-ccache-${{ runner.os }}-openmp-gcc-12-${{ hashFiles('CMakeLists.txt', 'src/CMakeLists.txt') }}
-          restore-keys: |
-            v1-ccache-${{ runner.os }}-openmp-gcc-12-
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            build-openmp-gcc-12/_deps
-            ~/.cache/ccache
-          key: deps-openmp-gcc-12-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
-          restore-keys: |
-            deps-openmp-gcc-12-
-
-      - name: Configure CMake
-        run: cmake --preset openmp-gcc-12
-
-      - name: Build
-        run: cmake --build --preset openmp-gcc-12 -- -j$(nproc)
-
-      - name: Run tests
-        run: ctest --preset openmp-gcc-12 --output-on-failure
-
-      - name: Show ccache statistics
-        run: ccache -s || true
-
-  openmp-gcc-14:
-    name: OpenMP (GCC 14)
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y ninja-build ccache g++-14
-
-      - name: Setup ccache
-        uses: actions/cache@v4
-        with:
-          path: .ccache
-          key: v1-ccache-${{ runner.os }}-openmp-gcc-14-${{ hashFiles('CMakeLists.txt', 'src/CMakeLists.txt') }}
-          restore-keys: |
-            v1-ccache-${{ runner.os }}-openmp-gcc-14-
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            build-openmp-gcc-14/_deps
-            ~/.cache/ccache
-          key: deps-openmp-gcc-14-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
-          restore-keys: |
-            deps-openmp-gcc-14-
-
-      - name: Configure CMake
-        run: cmake --preset openmp-gcc-14
-
-      - name: Build
-        run: cmake --build --preset openmp-gcc-14 -- -j$(nproc)
-
-      - name: Run tests
-        run: ctest --preset openmp-gcc-14 --output-on-failure
-
-      - name: Show ccache statistics
-        run: ccache -s || true
-
-  # Note: OpenMP with Clang has issues with CMake detection in some environments
-  # The presets are available for local use but not tested in CI
-  # To use locally, you may need: -DOpenMP_CXX_FLAGS="-fopenmp=libomp" -DOpenMP_CXX_LIB_NAMES=omp
-  # openmp-clang-18:
-
-  # ============================================================================
-  # Sanitizers
-  # ============================================================================
-  serial-sanitizer:
-    name: Serial (ASAN/UBSAN with GCC 14)
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y ninja-build g++-14
-
-      - name: Setup ccache
-        uses: actions/cache@v4
-        with:
-          path: .ccache
-          key: v1-ccache-${{ runner.os }}-serial-asan-${{ hashFiles('CMakeLists.txt', 'src/CMakeLists.txt') }}
-          restore-keys: |
-            v1-ccache-${{ runner.os }}-serial-asan-
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            build-serial-asan/_deps
-            ~/.cache/ccache
-          key: deps-serial-asan-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
-          restore-keys: |
-            deps-serial-asan-
-
-      - name: Configure CMake
-        run: cmake --preset serial-asan -DCMAKE_CXX_COMPILER=g++-14
-
-      - name: Build
-        run: cmake --build --preset serial-asan -- -j$(nproc)
-
-      - name: Run tests
-        run: ctest --preset serial-asan --output-on-failure
+        run: ctest --preset ${{ matrix.preset }} --output-on-failure
 
       - name: Show ccache statistics
         run: ccache -s || true
 
   # ============================================================================
-  # Benchmarks (only on GCC 14 + OpenMP for regression detection)
+  # Benchmarks (run once, reuse openmp-gcc-14 build)
   # ============================================================================
-  openmp-benchmarks:
-    name: OpenMP Benchmarks (GCC 14)
+  # Note: This reuses the test build cache for openmp-gcc-14 (fixes issue #18)
+  benchmark:
+    name: Benchmark (OpenMP, GCC 14)
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    needs: test  # Run after tests to reuse cache
     steps:
       - uses: actions/checkout@v4
 
@@ -337,11 +174,55 @@ jobs:
         run: ccache -s || true
 
   # ============================================================================
+  # Sanitizers
+  # ============================================================================
+  sanitizers:
+    name: Sanitizers (ASAN/UBSAN, GCC 14)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build g++-14
+
+      - name: Setup ccache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: v1-ccache-${{ runner.os }}-serial-asan-${{ hashFiles('CMakeLists.txt', 'src/CMakeLists.txt') }}
+          restore-keys: |
+            v1-ccache-${{ runner.os }}-serial-asan-
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            build-serial-asan/_deps
+            ~/.cache/ccache
+          key: deps-serial-asan-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
+          restore-keys: |
+            deps-serial-asan-
+
+      - name: Configure CMake
+        run: cmake --preset serial-asan -DCMAKE_CXX_COMPILER=g++-14
+
+      - name: Build
+        run: cmake --build --preset serial-asan -- -j$(nproc)
+
+      - name: Run tests
+        run: ctest --preset serial-asan --output-on-failure
+
+      - name: Show ccache statistics
+        run: ccache -s || true
+
+  # ============================================================================
   # Code Coverage
   # ============================================================================
   coverage:
     name: Code Coverage
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
