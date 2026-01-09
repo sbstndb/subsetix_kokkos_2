@@ -233,12 +233,12 @@ pre-commit run --all-files
 
 ### Static Analysis
 
-Run clang-tidy for static analysis:
+Run clang-tidy for static analysis (uses clang-18 to match CI):
 
 ```bash
-cmake --preset serial -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-cmake --build --preset serial
-run-clang-tidy -p build-serial tests/ benchmarks/
+cmake --preset serial-clang-18 -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+cmake --build --preset serial-clang-18
+run-clang-tidy-18 -p build-serial-clang-18 tests/ benchmarks/
 ```
 
 ### Adding Tests

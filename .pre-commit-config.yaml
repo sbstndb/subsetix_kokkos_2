@@ -30,11 +30,12 @@ repos:
 
   # C++ static analysis with clang-tidy
   # Note: Set SKIP=clang-tidy to skip this hook (e.g., SKIP=clang-tidy git commit)
+  # Uses clang-18 to match CI (.github/workflows/ci.yml)
   - repo: local
     hooks:
       - id: clang-tidy
         name: clang-tidy
-        entry: bash -c 'if [ -d "build-serial" ] && [ -f "build-serial/compile_commands.json" ]; then run-clang-tidy -p build-serial tests/ benchmarks/ src/; else echo "clang-tidy: build directory not configured, run: cmake --preset serial && cmake --build --preset serial" >&2; exit 1; fi'
+        entry: bash -c 'if [ -d "build-serial-clang-18" ] && [ -f "build-serial-clang-18/compile_commands.json" ]; then run-clang-tidy-18 -p build-serial-clang-18 tests/ benchmarks/ src/; else echo "clang-tidy: build directory not configured, run: cmake --preset serial-clang-18 && cmake --build --preset serial-clang-18" >&2; exit 1; fi'
         language: system
         files: \.(hpp|cpp|h|cc|c)$
         pass_filenames: false
