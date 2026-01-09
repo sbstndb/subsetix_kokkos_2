@@ -46,9 +46,10 @@ jobs:
 
       - name: Run clang-tidy
         run: |
-          find tests benchmarks src -name '*.cpp' -o -name '*.hpp' | \
-          xargs run-clang-tidy-18 -p build-serial-clang-18 \
-            -warnings-as-errors '*' -header-filter='^subsetix/' -quiet
+          # Only analyze files from our project (exclude _deps)
+          run-clang-tidy-18 -p build-serial-clang-18 \
+            -warnings-as-errors '*' -header-filter='^subsetix/' -quiet \
+            $(find build-serial-clang-18 -name '*.cpp' -path '*/tests/*' -o -path '*/benchmarks/*' -o -path '*/src/*')
 
   # ============================================================================
   # Compiler Matrix Tests
