@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
 
 env:
   # Use ccache to speed up builds
@@ -20,12 +20,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install clang-format
-        run: sudo apt-get update && sudo apt-get install -y clang-format
+      - name: Install clang-format and clang-tidy
+        run: sudo apt-get update && sudo apt-get install -y clang-format clang-tidy
 
       - name: Check formatting
         run: |
           find . -name '*.hpp' -o -name '*.cpp' | xargs clang-format --dry-run --Werror
+
+  clang-tidy:
+    name: Static Analysis (clang-tidy)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build clang-18 clang-tidy-18
+
+      - name: Configure CMake
+        run: cmake --preset serial-clang-18 -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: Build for analysis
+        run: cmake --build --preset serial-clang-18
+
+      - name: Run clang-tidy
+        run: run-clang-tidy-18 -p build-serial-clang-18 tests/ benchmarks/ src/ --warnings-as-errors
 
   # ============================================================================
   # Compiler Matrix Tests
@@ -45,9 +63,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .ccache
-          key: ccache-serial-gcc-12-${{ github.sha }}
+          key: v1-ccache-${{ runner.os }}-serial-gcc-12-${{ hashFiles('CMakeLists.txt', 'src/CMakeLists.txt') }}
           restore-keys: |
-            ccache-serial-gcc-12-
+            v1-ccache-${{ runner.os }}-serial-gcc-12-
 
       # Cache FetchContent dependencies (Kokkos, GoogleTest, Google Benchmark)
       - name: Cache dependencies
@@ -85,9 +103,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .ccache
-          key: ccache-serial-gcc-14-${{ github.sha }}
+          key: v1-ccache-${{ runner.os }}-serial-gcc-14-${{ hashFiles('CMakeLists.txt', 'src/CMakeLists.txt') }}
           restore-keys: |
-            ccache-serial-gcc-14-
+            v1-ccache-${{ runner.os }}-serial-gcc-14-
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -124,9 +142,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .ccache
-          key: ccache-serial-clang-18-${{ github.sha }}
+          key: v1-ccache-${{ runner.os }}-serial-clang-18-${{ hashFiles('CMakeLists.txt', 'src/CMakeLists.txt') }}
           restore-keys: |
-            ccache-serial-clang-18-
+            v1-ccache-${{ runner.os }}-serial-clang-18-
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -164,9 +182,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .ccache
-          key: ccache-openmp-gcc-12-${{ github.sha }}
+          key: v1-ccache-${{ runner.os }}-openmp-gcc-12-${{ hashFiles('CMakeLists.txt', 'src/CMakeLists.txt') }}
           restore-keys: |
-            ccache-openmp-gcc-12-
+            v1-ccache-${{ runner.os }}-openmp-gcc-12-
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -203,9 +221,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .ccache
-          key: ccache-openmp-gcc-14-${{ github.sha }}
+          key: v1-ccache-${{ runner.os }}-openmp-gcc-14-${{ hashFiles('CMakeLists.txt', 'src/CMakeLists.txt') }}
           restore-keys: |
-            ccache-openmp-gcc-14-
+            v1-ccache-${{ runner.os }}-openmp-gcc-14-
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -250,9 +268,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .ccache
-          key: ccache-serial-asan-${{ github.sha }}
+          key: v1-ccache-${{ runner.os }}-serial-asan-${{ hashFiles('CMakeLists.txt', 'src/CMakeLists.txt') }}
           restore-keys: |
-            ccache-serial-asan-
+            v1-ccache-${{ runner.os }}-serial-asan-
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -292,9 +310,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .ccache
-          key: ccache-openmp-gcc-14-${{ github.sha }}
+          key: v1-ccache-${{ runner.os }}-openmp-gcc-14-${{ hashFiles('CMakeLists.txt', 'src/CMakeLists.txt') }}
           restore-keys: |
-            ccache-openmp-gcc-14-
+            v1-ccache-${{ runner.os }}-openmp-gcc-14-
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -317,3 +335,43 @@ jobs:
 
       - name: Show ccache statistics
         run: ccache -s || true
+
+  # ============================================================================
+  # Code Coverage
+  # ============================================================================
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build g++-14 lcov
+
+      - name: Configure CMake with coverage
+        run: >
+          cmake --preset serial-gcc-14
+          -DCMAKE_CXX_FLAGS="--coverage"
+          -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+
+      - name: Build
+        run: cmake --build --preset serial-gcc-14 -- -j$(nproc)
+
+      - name: Run tests
+        run: ctest --preset serial-gcc-14 --output-on-failure
+
+      - name: Generate coverage report
+        run: |
+          lcov --capture --directory build-serial-gcc-14 --output-file coverage.info --no-external
+          lcov --list coverage.info
+          lcov --remove coverage.info '/usr/*' --output-file coverage.info
+          lcov --remove coverage.info '*/_deps/*' --output-file coverage.info
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          file: ./coverage.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}

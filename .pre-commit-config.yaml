@@ -28,6 +28,16 @@ repos:
         files: \.(hpp|cpp|h|cc|c)$
         args: ['--Werror', '--fallback-style=none']
 
+  # C++ static analysis with clang-tidy
+  - repo: local
+    hooks:
+      - id: clang-tidy
+        name: clang-tidy
+        entry: bash -c 'cmake --preset serial -DCMAKE_EXPORT_COMPILE_COMMANDS=ON >/dev/null 2>&1 && cmake --build --preset serial >/dev/null 2>&1 && run-clang-tidy -p build-serial tests/ benchmarks/ src/'
+        language: system
+        files: \.(hpp|cpp|h|cc|c)$
+        pass_filenames: false
+
   # CMake formatting
   - repo: https://github.com/cheshirekow/cmake-format-precommit
     rev: v0.6.13
@@ -52,6 +62,23 @@ repos:
     hooks:
       - id: actionlint
         files: ^\.github/workflows/.*\.ya?ml$
+
+  # Markdown linting
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.43.0
+    hooks:
+      - id: markdownlint
+        args: [--fix]
+        files: \.md$
+
+  # Security scanning with semgrep
+  - repo: https://github.com/returntocorp/semgrep
+    rev: v1.94.0
+    hooks:
+      - id: semgrep
+        args: ['--config', 'auto', '--error']
+        files: \.(hpp|cpp|h|cc|c)$
+        pass_filenames: false
 
 # CI configuration
 ci:

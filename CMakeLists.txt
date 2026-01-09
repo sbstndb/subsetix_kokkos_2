@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
-project(subsetix_kokkos LANGUAGES CXX VERSION 0.1.0)
+project(subsetix_kokkos
+  VERSION 0.1.0
+  DESCRIPTION "Geometry processing library with Kokkos parallel backends"
+  HOMEPAGE_URL "https://github.com/sbstndb/subsetix_kokkos_2"
+  LANGUAGES CXX
+)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -97,9 +102,13 @@ endif()
 # ============================================================================
 
 if(SUBSETIX_ENABLE_SANITIZERS)
-  message(STATUS "Enabling address and undefined behavior sanitizers")
-  add_compile_options(-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer)
-  add_link_options(-fsanitize=address -fsanitize=undefined)
+  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    message(STATUS "Enabling address and undefined behavior sanitizers")
+    add_compile_options(-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=address -fsanitize=undefined)
+  else()
+    message(WARNING "Sanitizers not supported for ${CMAKE_CXX_COMPILER_ID} compiler")
+  endif()
 endif()
 
 # ============================================================================

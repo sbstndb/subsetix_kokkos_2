@@ -18,6 +18,9 @@ target_link_libraries(subsetix_core
     Kokkos::kokkos
 )
 
+# Require C++20
+target_compile_features(subsetix_core INTERFACE cxx_std_20)
+
 # Alias for convenience
 add_library(subsetix::core ALIAS subsetix_core)
 
