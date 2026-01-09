@@ -1,7 +1,11 @@
 [![CI](https://github.com/sbstndb/subsetix_kokkos_2/workflows/CI/badge.svg)](https://github.com/sbstndb/subsetix_kokkos_2/actions)
 [![codecov](https://codecov.io/gh/sbstndb/subsetix_kokkos_2/branch/main/graph/badge.svg)](https://codecov.io/gh/sbstndb/subsetix_kokkos_2)
 [![Format](https://img.shields.io/badge/code%20style-clang--format-blue.svg)](https://github.com/sbstndb/subsetix_kokkos_2)
+[![Lint](https://img.shields.io/badge/static%20analysis-clang--tidy-blue.svg)](https://github.com/sbstndb/subsetix_kokkos_2)
 [![License: BSD 3-Clause](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+[![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://en.cppreference.com/w/cpp/20)
+[![REUSE](https://img.shields.io/badge/reuse--check-v3.0-brightgreen.svg)](https://reuse.software/)
+[![Platform](https://img.shields.io/badge/platform-linux-lightgrey.svg)](https://github.com/sbstndb/subsetix_kokkos_2)
 
 # Subsetix Kokkos
 
