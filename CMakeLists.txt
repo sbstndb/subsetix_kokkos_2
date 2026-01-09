@@ -53,12 +53,12 @@ FetchContent_MakeAvailable(kokkos)
 # ----------------------------------------------------------------------------
 
 if(SUBSETIX_BUILD_TESTS)
-  message(STATUS "Fetching GoogleTest 1.15.0...")
+  message(STATUS "Fetching GoogleTest 1.17.0...")
 
   FetchContent_Declare(
     googletest
     GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG v1.15.0
+    GIT_TAG v1.17.0
     GIT_SHALLOW TRUE
   )
 
@@ -75,12 +75,12 @@ endif()
 # ----------------------------------------------------------------------------
 
 if(SUBSETIX_BUILD_BENCHMARKS)
-  message(STATUS "Fetching Google Benchmark 1.8.4...")
+  message(STATUS "Fetching Google Benchmark 1.9.4...")
 
   FetchContent_Declare(
     benchmark
     GIT_REPOSITORY https://github.com/google/benchmark.git
-    GIT_TAG v1.8.4
+    GIT_TAG v1.9.4
     GIT_SHALLOW TRUE
   )
 

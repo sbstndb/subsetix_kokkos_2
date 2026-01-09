@@ -310,8 +310,8 @@ All dependencies are fetched automatically via CMake FetchContent:
 | Dependency | Version | License |
 |------------|---------|---------|
 | [Kokkos](https://github.com/kokkos/kokkos) | 5.0.1 | Apache 2.0 |
-| [GoogleTest](https://github.com/google/googletest) | 1.15.0 | BSD 3-Clause |
-| [Google Benchmark](https://github.com/google/benchmark) | 1.8.4 | Apache 2.0 |
+| [GoogleTest](https://github.com/google/googletest) | 1.17.0 | BSD 3-Clause |
+| [Google Benchmark](https://github.com/google/benchmark) | 1.9.4 | Apache 2.0 |
 
 ## License
 
