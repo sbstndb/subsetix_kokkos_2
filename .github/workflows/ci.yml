@@ -109,9 +109,7 @@ jobs:
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
-          path: |
-            build-${{ matrix.preset }}/_deps
-            ~/.cache/ccache
+          path: build-${{ matrix.preset }}/_deps
           key: deps-${{ matrix.preset }}-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
           restore-keys: |
             deps-${{ matrix.preset }}-
@@ -154,9 +152,7 @@ jobs:
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
-          path: |
-            build-openmp-gcc-14/_deps
-            ~/.cache/ccache
+          path: build-openmp-gcc-14/_deps
           key: deps-openmp-gcc-14-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
           restore-keys: |
             deps-openmp-gcc-14-
@@ -197,9 +193,7 @@ jobs:
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
-          path: |
-            build-serial-asan/_deps
-            ~/.cache/ccache
+          path: build-serial-asan/_deps
           key: deps-serial-asan-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
           restore-keys: |
             deps-serial-asan-
