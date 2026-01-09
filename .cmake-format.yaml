@@ -1,0 +1,131 @@
+# cmake-format configuration for Subsetix Kokkos
+# https://cmake-format.readthedocs.io/en/latest/configuration.html
+
+# How to place command arguments
+# keyword: if the argument length is >= the argument name length, place on next line
+# keyword-pref: if the argument length is > the argument name length, place on next line
+# auto: automatically determine based on the hash of the argument
+autosort: false
+
+# Specify the order for sorting options
+# Options will be compared according to this ordering.
+option_order:
+  - PRIVATE
+  - PUBLIC
+  - INTERFACE
+
+# How to format command calls
+# keyword: if the argument length is >= the argument name length, place on next line
+# keyword-pref: if the argument length is > the argument name length, place on next line
+# auto: automatically determine based on the hash of the argument
+command_case: lower
+
+# How to format keywords
+# lower, upper, capitalize, unchanged
+keyword_case: upper
+
+# How to format target properties
+# lower, upper, capitalize, unchanged
+property_case: upper
+
+# How to format variables
+# lower, upper, capitalize, unchanged
+variable_case: lower
+
+# Enable markup formatting
+enable_markup: false
+
+# Maximum line length
+max_line_length: 100
+
+# Tab size
+tab_size: 2
+
+# Use tabs instead of spaces
+use_tabchars: false
+
+# Separate sections with whitespace
+separate_ctrl_name_with_space: false
+
+# Separate function name from left parenthesis
+separate_fn_name_with_space: false
+
+# How to position opening parenthesis
+# legacy: place on same line as command name
+# always: always start a new line
+# never: never start a new line
+# auto: automatically determine
+template_pattern: '[A-Z][A-Z0-9_]+'
+
+# Commands to treat as keywords
+additional_commands:
+  fetchcontent_makeavailable:
+    kwargs:
+      quiet: true
+  fetchcontent_declare:
+    kwargs:
+      quiet: true
+  fetchcontent_getproperties:
+    kwargs:
+      quiet: true
+
+# Layout options
+layout:
+  per_file:
+    - - '#'
+      - '# Documentation'
+      - cmake_minimum_required
+      - project
+      - '#'
+      - '# Options'
+      - option
+      - '#'
+      - '# Dependencies'
+      - include
+      - find_package
+      - fetchcontent_declare
+      - fetchcontent_getproperties
+      - fetchcontent_makeavailable
+      - '#'
+      - '# Targets'
+      - add_executable
+      - add_library
+      - target_*
+      - '#'
+      - '# Installation'
+      - install
+      - '#'
+      - '# Testing'
+      - enable_testing
+      - add_test
+
+# Max number of arguments before forcing a newline
+max_pargs_hwrap: 3
+
+# Minimum number of arguments before forcing a newline
+min_pargs_hwrap: 1
+
+# Allow splitting if argument length exceeds this
+max_rows_cmdline: 2
+
+# Always wrap args if number exceeds this
+max_lines_hwrap: 2
+
+# Format description
+dangle_parens: false
+
+# Ignore case for sorting
+ignore_case: false
+
+# Sort directories
+sort_directories: false
+
+# Include helpers
+include:
+  - .cmake-format.yaml
+  - cmake-format-*.yaml
+
+# Exclude patterns
+exclude:
+  - build*/
+  - _deps/

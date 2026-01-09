@@ -106,11 +106,13 @@ endif()
 # Sanitizers
 # ============================================================================
 
+# Sanitizer flags for targets (tests, benchmarks)
+# Note: NOT applied globally because this is a header-only library
 if(SUBSETIX_ENABLE_SANITIZERS)
   if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     message(STATUS "Enabling address and undefined behavior sanitizers")
-    add_compile_options(-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer)
-    add_link_options(-fsanitize=address -fsanitize=undefined)
+    set(SUBSETIX_SANITIZER_COMPILE_FLAGS "-fsanitize=address" "-fsanitize=undefined" "-fno-omit-frame-pointer")
+    set(SUBSETIX_SANITIZER_LINK_FLAGS "-fsanitize=address" "-fsanitize=undefined")
   else()
     message(WARNING "Sanitizers not supported for ${CMAKE_CXX_COMPILER_ID} compiler")
   endif()

@@ -15,6 +15,12 @@ target_link_libraries(subsetix_test_main
     gtest_main
 )
 
+# Apply sanitizer flags if enabled
+if(SUBSETIX_ENABLE_SANITIZERS AND DEFINED SUBSETIX_SANITIZER_COMPILE_FLAGS)
+  target_compile_options(subsetix_test_main PRIVATE ${SUBSETIX_SANITIZER_COMPILE_FLAGS})
+  target_link_options(subsetix_test_main PRIVATE ${SUBSETIX_SANITIZER_LINK_FLAGS})
+endif()
+
 # Include directories
 target_include_directories(subsetix_test_main
   PRIVATE
