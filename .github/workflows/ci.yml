@@ -237,8 +237,11 @@ jobs:
 
       - name: Generate coverage report
         run: |
-          lcov --capture --directory build-serial-gcc-14 --output-file coverage.info --no-external --gcov-tool gcov-14
+          lcov --capture --directory build-serial-gcc-14 --output-file coverage.info --gcov-tool gcov-14
+          lcov --remove coverage.info '/usr/*' --output-file coverage.info --gcov-tool gcov-14
           lcov --remove coverage.info '*/_deps/*' --output-file coverage.info --gcov-tool gcov-14
+          lcov --remove coverage.info '*/googletest/*' --output-file coverage.info --gcov-tool gcov-14
+          lcov --remove coverage.info '*/benchmark/*' --output-file coverage.info --gcov-tool gcov-14
           lcov --list coverage.info --gcov-tool gcov-14
 
       - name: Check coverage threshold (quality gate)
