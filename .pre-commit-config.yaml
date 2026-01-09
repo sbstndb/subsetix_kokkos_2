@@ -1,0 +1,67 @@
+---
+# Pre-commit hooks configuration for Subsetix Kokkos
+# Install: pip install pre-commit
+# Run: pre-commit install
+
+repos:
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--unsafe]
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+  # C++ formatting with clang-format
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v19.1.7
+    hooks:
+      - id: clang-format
+        files: \.(hpp|cpp|h|cc|c)$
+        args: ['--Werror', '--fallback-style=none']
+
+  # CMake formatting
+  - repo: https://github.com/cheshirekow/cmake-format-precommit
+    rev: v0.6.13
+    hooks:
+      - id: cmake-format
+        additional_dependencies: [pyyaml]
+        files: (CMakeLists\.txt|.*\.cmake)$
+      - id: cmake-lint
+        additional_dependencies: [pyyaml]
+        files: (CMakeLists\.txt|.*\.cmake)$
+
+  # Shell script checks
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        files: \.(sh|bash)$
+
+  # GitHub Actions linting
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.5
+    hooks:
+      - id: actionlint
+        files: ^\.github/workflows/.*\.ya?ml$
+
+# CI configuration
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

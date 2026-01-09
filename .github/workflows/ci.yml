@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # ============================================================================
+  # Format and Lint Checks
+  # ============================================================================
+  format-lint:
+    name: Code Style Check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format
+
+      - name: Check formatting
+        run: |
+          find . -name '*.hpp' -o -name '*.cpp' | xargs clang-format --dry-run --Werror
+
+  # ============================================================================
+  # Serial Backend Tests
+  # ============================================================================
+  serial-tests:
+    name: Serial Backend Tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build ccache g++
+
+      - name: Configure CMake
+        run: cmake --preset serial -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
+
+      - name: Build
+        run: cmake --build --preset serial -- -j$(nproc)
+
+      - name: Run tests
+        run: ctest --preset serial --output-on-failure
+
+  # ============================================================================
+  # Serial Backend with Sanitizers
+  # ============================================================================
+  serial-sanitizer:
+    name: Serial Backend (ASAN/UBSAN)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build g++
+
+      - name: Configure CMake
+        run: cmake --preset serial-asan -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
+
+      - name: Build
+        run: cmake --build --preset serial-asan -- -j$(nproc)
+
+      - name: Run tests
+        run: ctest --preset serial-asan --output-on-failure
+
+  # ============================================================================
+  # OpenMP Backend Tests
+  # ============================================================================
+  openmp-tests:
+    name: OpenMP Backend Tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build g++
+
+      - name: Configure CMake
+        run: cmake --preset openmp -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
+
+      - name: Build
+        run: cmake --build --preset openmp -- -j$(nproc)
+
+      - name: Run tests
+        run: ctest --preset openmp --output-on-failure
+
+  # ============================================================================
+  # OpenMP Benchmarks
+  # ============================================================================
+  openmp-benchmarks:
+    name: OpenMP Benchmarks
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build g++
+
+      - name: Configure CMake
+        run: cmake --preset openmp -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
+
+      - name: Build
+        run: cmake --build --preset openmp -- -j$(nproc)
+
+      - name: Run benchmarks
+        run: ./build-openmp/benchmarks/subsetix_benchmark_main --benchmark_min_time=0.1
