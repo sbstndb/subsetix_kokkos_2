@@ -45,7 +45,10 @@ jobs:
         run: cmake --build --preset serial-clang-18
 
       - name: Run clang-tidy
-        run: run-clang-tidy-18 -p build-serial-clang-18 tests/ benchmarks/ src/ -warnings-as-errors '*' -header-filter='^subsetix/' -quiet -exclude 'build-serial-clang-18/_deps'
+        run: |
+          find tests benchmarks src -name '*.cpp' -o -name '*.hpp' | \
+          xargs run-clang-tidy-18 -p build-serial-clang-18 \
+            -warnings-as-errors '*' -header-filter='^subsetix/' -quiet
 
   # ============================================================================
   # Compiler Matrix Tests
