@@ -21,6 +21,7 @@ Checks: >
   clang-analyzer-core.*, clang-analyzer-cplusplus.*, clang-analyzer-deadcode.*, clang-analyzer-security.*, clang-analyzer-unix.*,
   cppcoreguidelines-*,
   -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-narrowing-conversions,
   -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -cppcoreguidelines-avoid-c-arrays,
@@ -31,12 +32,17 @@ Checks: >
   misc-*,
   -misc-non-private-member-variables-in-classes,
   -misc-no-recursion,
+  -misc-const-correctness,
+  -misc-include-cleaner,
+  -misc-header-include-cycle,
+  -misc-use-anonymous-namespace,
   modernize-*,
   -modernize-use-trailing-return-type,
   -modernize-avoid-c-arrays,
   performance-*,
   -performance-move-const-arg,
   -performance-noexcept-move-constructor,
+  -performance-unnecessary-value-param,
   portability-*,
   concurrency-*,
   readability-*,
@@ -57,7 +63,3 @@ CheckOptions:
     value: 'NULL'
   - key: modernize-use-nullptr.IgnoreMacros
     value: '1'
-
-  # Performance
-  - key: performance-unnecessary-value-param.IncludeStyle
-    value: 'llvm'
