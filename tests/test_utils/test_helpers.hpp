@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Kokkos_Core.hpp>
+
 #include <gtest/gtest.h>
 
 namespace subsetix::test {
@@ -24,11 +25,10 @@ namespace subsetix::test {
 // ============================================================================
 
 template <class T, class ExecSpace = Kokkos::DefaultExecutionSpace>
-bool view_matches(Kokkos::View<T*, ExecSpace> device_view,
-                  const std::vector<T>& expected) {
-  static_assert(Kokkos::SpaceAccessibility<typename ExecSpace::memory_space,
-                                           Kokkos::HostSpace>::accessible,
-                "View must be accessible from HostSpace or use mirror");
+bool view_matches(Kokkos::View<T*, ExecSpace> device_view, const std::vector<T>& expected) {
+  static_assert(
+      Kokkos::SpaceAccessibility<typename ExecSpace::memory_space, Kokkos::HostSpace>::accessible,
+      "View must be accessible from HostSpace or use mirror");
 
   const int n = device_view.extent(0);
   if (n != static_cast<int>(expected.size())) {
@@ -47,11 +47,10 @@ bool view_matches(Kokkos::View<T*, ExecSpace> device_view,
 
 // Overload for const T (e.g., View<const int*, ExecSpace>)
 template <class T, class ExecSpace = Kokkos::DefaultExecutionSpace>
-bool view_matches(Kokkos::View<const T*, ExecSpace> device_view,
-                  const std::vector<T>& expected) {
-  static_assert(Kokkos::SpaceAccessibility<typename ExecSpace::memory_space,
-                                           Kokkos::HostSpace>::accessible,
-                "View must be accessible from HostSpace or use mirror");
+bool view_matches(Kokkos::View<const T*, ExecSpace> device_view, const std::vector<T>& expected) {
+  static_assert(
+      Kokkos::SpaceAccessibility<typename ExecSpace::memory_space, Kokkos::HostSpace>::accessible,
+      "View must be accessible from HostSpace or use mirror");
 
   const int n = device_view.extent(0);
   if (n != static_cast<int>(expected.size())) {
@@ -76,8 +75,10 @@ template <class ExecSpace = Kokkos::DefaultExecutionSpace>
 int parallel_sum(int n) {
   int result = 0;
   Kokkos::parallel_reduce(
-      "test_sum", n,
-      KOKKOS_LAMBDA(int i, int& local_result) { local_result += i; }, result);
+      "test_sum",
+      n,
+      KOKKOS_LAMBDA(int i, int& local_result) { local_result += i; },
+      result);
   return result;
 }
 
@@ -88,17 +89,14 @@ int parallel_sum(int n) {
 template <class T, class ExecSpace = Kokkos::DefaultExecutionSpace>
 void fill_with_index(Kokkos::View<T*, ExecSpace> view) {
   const int n = view.extent(0);
-  Kokkos::parallel_for(
-      "fill_index", n,
-      KOKKOS_LAMBDA(int i) { view(i) = static_cast<T>(i); });
+  Kokkos::parallel_for("fill_index", n, KOKKOS_LAMBDA(int i) { view(i) = static_cast<T>(i); });
   Kokkos::fence();
 }
 
 template <class T, class ExecSpace = Kokkos::DefaultExecutionSpace>
 void fill_with_value(Kokkos::View<T*, ExecSpace> view, T value) {
   const int n = view.extent(0);
-  Kokkos::parallel_for(
-      "fill_value", n, KOKKOS_LAMBDA(int i) { view(i) = value; });
+  Kokkos::parallel_for("fill_value", n, KOKKOS_LAMBDA(int i) { view(i) = value; });
   Kokkos::fence();
 }
 
@@ -137,8 +135,7 @@ Kokkos::View<T*, ExecSpace> to_device_view(const std::vector<T>& host_data) {
 // ============================================================================
 
 template <class T, class ExecSpace = Kokkos::DefaultExecutionSpace>
-int count_mismatches(Kokkos::View<const T*, ExecSpace> view,
-                     const std::vector<T>& expected) {
+int count_mismatches(Kokkos::View<const T*, ExecSpace> view, const std::vector<T>& expected) {
   const int n = view.extent(0);
   int mismatches = 0;
 
@@ -151,7 +148,8 @@ int count_mismatches(Kokkos::View<const T*, ExecSpace> view,
   Kokkos::deep_copy(expected_device, expected_host);
 
   Kokkos::parallel_reduce(
-      "count_mismatches", n,
+      "count_mismatches",
+      n,
       KOKKOS_LAMBDA(int i, int& local_mismatches) {
         if (view(i) != expected_device(i)) {
           local_mismatches++;
@@ -164,8 +162,7 @@ int count_mismatches(Kokkos::View<const T*, ExecSpace> view,
 
 // Overload for non-const view
 template <class T, class ExecSpace = Kokkos::DefaultExecutionSpace>
-int count_mismatches(Kokkos::View<T*, ExecSpace> view,
-                     const std::vector<T>& expected) {
+int count_mismatches(Kokkos::View<T*, ExecSpace> view, const std::vector<T>& expected) {
   // Just call the const version by casting
   return count_mismatches(Kokkos::View<const T*, ExecSpace>(view), expected);
 }
@@ -174,11 +171,11 @@ int count_mismatches(Kokkos::View<T*, ExecSpace> view,
 // GTest macros for device views
 // ============================================================================
 
-#define EXPECT_VIEW_EQ(view, expected) \
+#define EXPECT_VIEW_EQ(view, expected)                      \
   EXPECT_TRUE(subsetix::test::view_matches(view, expected)) \
       << "Device view does not match expected values"
 
-#define ASSERT_VIEW_EQ(view, expected) \
+#define ASSERT_VIEW_EQ(view, expected)                      \
   ASSERT_TRUE(subsetix::test::view_matches(view, expected)) \
       << "Device view does not match expected values"
 

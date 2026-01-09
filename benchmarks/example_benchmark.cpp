@@ -1,17 +1,20 @@
-#include <benchmark/benchmark.h>
 #include <Kokkos_Core.hpp>
+
+#include <benchmark/benchmark.h>
 
 // Example benchmark: parallel for
 static void BM_ParallelFor(benchmark::State& state) {
   const int n = state.range(0);
 
   for (auto _ : state) {
-    Kokkos::parallel_for("simple_for", n,
-      KOKKOS_LAMBDA(const int i) {
-        // Simple computation
-        volatile double x = i * 2.0;
-        (void)x;  // Prevent unused variable warning
-      });
+    Kokkos::parallel_for(
+        "simple_for",
+        n,
+        KOKKOS_LAMBDA(const int i) {
+          // Simple computation
+          volatile double x = i * 2.0;
+          (void)x;  // Prevent unused variable warning
+        });
     Kokkos::fence();  // Ensure computation is complete
   }
 
@@ -27,10 +30,11 @@ static void BM_ParallelReduce(benchmark::State& state) {
 
   for (auto _ : state) {
     int result = 0;
-    Kokkos::parallel_reduce("simple_reduce", n,
-      KOKKOS_LAMBDA(const int i, int& local_result) {
-        local_result += i;
-      }, result);
+    Kokkos::parallel_reduce(
+        "simple_reduce",
+        n,
+        KOKKOS_LAMBDA(const int i, int& local_result) { local_result += i; },
+        result);
     benchmark::DoNotOptimize(result);
   }
 

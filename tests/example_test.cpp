@@ -1,6 +1,8 @@
-#include <gtest/gtest.h>
-#include <Kokkos_Core.hpp>
 #include <vector>
+
+#include <Kokkos_Core.hpp>
+
+#include <gtest/gtest.h>
 
 // Example test that verifies Kokkos is working correctly
 TEST(KokkosInitialization, BasicTest) {
@@ -12,7 +14,8 @@ TEST(KokkosInitialization, BasicTest) {
 int parallel_sum(int n) {
   int result = 0;
   Kokkos::parallel_reduce(
-      "simple_reduce", n,
+      "simple_reduce",
+      n,
       KOKKOS_LAMBDA(int i, int& local_result) { local_result += i; },
       result);
   return result;
@@ -32,8 +35,7 @@ TEST(KokkosParallelFor, SimpleRange) {
 // Helper function to fill view with index (CUDA-compatible)
 void fill_with_index(Kokkos::View<int*, Kokkos::DefaultExecutionSpace> view) {
   const int n = view.extent(0);
-  Kokkos::parallel_for(
-      "fill_index", n, KOKKOS_LAMBDA(int i) { view(i) = i; });
+  Kokkos::parallel_for("fill_index", n, KOKKOS_LAMBDA(int i) { view(i) = i; });
   Kokkos::fence();
 }
 
@@ -59,7 +61,8 @@ TEST(KokkosViewHelpers, FillAndCompare) {
 int compute_sum_offset(int n, int offset) {
   int result = 0;
   Kokkos::parallel_reduce(
-      "sum_offset", n,
+      "sum_offset",
+      n,
       KOKKOS_LAMBDA(int i, int& local_result) { local_result += i + offset; },
       result);
   return result;

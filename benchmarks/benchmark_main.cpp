@@ -1,5 +1,6 @@
-#include <benchmark/benchmark.h>
 #include <Kokkos_Core.hpp>
+
+#include <benchmark/benchmark.h>
 
 int main(int argc, char** argv) {
   // Initialize Kokkos before running benchmarks
