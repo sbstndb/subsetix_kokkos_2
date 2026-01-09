@@ -24,93 +24,115 @@ jobs:
           find . -name '*.hpp' -o -name '*.cpp' | xargs clang-format --dry-run --Werror
 
   # ============================================================================
-  # Serial Backend Tests
+  # Compiler Matrix Tests
   # ============================================================================
-  serial-tests:
-    name: Serial Backend Tests
+  # Serial Backend
+  serial-gcc-12:
+    name: Serial (GCC 12)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-
       - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ninja-build ccache g++
-
+        run: sudo apt-get update && sudo apt-get install -y ninja-build ccache g++-12
       - name: Configure CMake
-        run: cmake --preset serial -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
-
+        run: cmake --preset serial-gcc-12
       - name: Build
-        run: cmake --build --preset serial -- -j$(nproc)
-
+        run: cmake --build --preset serial-gcc-12 -- -j$(nproc)
       - name: Run tests
-        run: ctest --preset serial --output-on-failure
+        run: ctest --preset serial-gcc-12 --output-on-failure
+
+  serial-gcc-14:
+    name: Serial (GCC 14)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build ccache g++-14
+      - name: Configure CMake
+        run: cmake --preset serial-gcc-14
+      - name: Build
+        run: cmake --build --preset serial-gcc-14 -- -j$(nproc)
+      - name: Run tests
+        run: ctest --preset serial-gcc-14 --output-on-failure
+
+  serial-clang-18:
+    name: Serial (Clang 18)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build ccache clang-18
+      - name: Configure CMake
+        run: cmake --preset serial-clang-18
+      - name: Build
+        run: cmake --build --preset serial-clang-18 -- -j$(nproc)
+      - name: Run tests
+        run: ctest --preset serial-clang-18 --output-on-failure
+
+  # OpenMP Backend
+  openmp-gcc-12:
+    name: OpenMP (GCC 12)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build ccache g++-12
+      - name: Configure CMake
+        run: cmake --preset openmp-gcc-12
+      - name: Build
+        run: cmake --build --preset openmp-gcc-12 -- -j$(nproc)
+      - name: Run tests
+        run: ctest --preset openmp-gcc-12 --output-on-failure
+
+  openmp-gcc-14:
+    name: OpenMP (GCC 14)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build ccache g++-14
+      - name: Configure CMake
+        run: cmake --preset openmp-gcc-14
+      - name: Build
+        run: cmake --build --preset openmp-gcc-14 -- -j$(nproc)
+      - name: Run tests
+        run: ctest --preset openmp-gcc-14 --output-on-failure
+
+  # Note: OpenMP with Clang has issues with CMake detection in some environments
+  # The presets are available for local use but not tested in CI
+  # To use locally, you may need: -DOpenMP_CXX_FLAGS="-fopenmp=libomp" -DOpenMP_CXX_LIB_NAMES=omp
+  # openmp-clang-18:
 
   # ============================================================================
-  # Serial Backend with Sanitizers
+  # Sanitizers
   # ============================================================================
   serial-sanitizer:
-    name: Serial Backend (ASAN/UBSAN)
+    name: Serial (ASAN/UBSAN with GCC 14)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-
       - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ninja-build g++
-
+        run: sudo apt-get update && sudo apt-get install -y ninja-build g++-14
       - name: Configure CMake
-        run: cmake --preset serial-asan -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
-
+        run: cmake --preset serial-asan -DCMAKE_CXX_COMPILER=g++-14
       - name: Build
         run: cmake --build --preset serial-asan -- -j$(nproc)
-
       - name: Run tests
         run: ctest --preset serial-asan --output-on-failure
 
   # ============================================================================
-  # OpenMP Backend Tests
-  # ============================================================================
-  openmp-tests:
-    name: OpenMP Backend Tests
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ninja-build g++
-
-      - name: Configure CMake
-        run: cmake --preset openmp -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
-
-      - name: Build
-        run: cmake --build --preset openmp -- -j$(nproc)
-
-      - name: Run tests
-        run: ctest --preset openmp --output-on-failure
-
-  # ============================================================================
-  # OpenMP Benchmarks
+  # Benchmarks (only on GCC 14 + OpenMP for regression detection)
   # ============================================================================
   openmp-benchmarks:
-    name: OpenMP Benchmarks
+    name: OpenMP Benchmarks (GCC 14)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-
       - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ninja-build g++
-
+        run: sudo apt-get update && sudo apt-get install -y ninja-build g++-14
       - name: Configure CMake
-        run: cmake --preset openmp -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
-
+        run: cmake --preset openmp-gcc-14
       - name: Build
-        run: cmake --build --preset openmp -- -j$(nproc)
-
+        run: cmake --build --preset openmp-gcc-14 -- -j$(nproc)
       - name: Run benchmarks
-        run: ./build-openmp/benchmarks/subsetix_benchmark_main --benchmark_min_time=0.1
+        run: ./build-openmp-gcc-14/benchmarks/subsetix_benchmark_main --benchmark_min_time=0.1

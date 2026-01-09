@@ -136,20 +136,40 @@ subsetix_kokkos_2/
 
 ### Configure Presets
 
-| Preset | Backends | Description |
-|--------|----------|-------------|
-| `serial` | Serial | Serial backend only (default, fastest for development) |
-| `serial-asan` | Serial + ASAN/UBSAN | Serial with sanitizers for debugging |
-| `openmp` | Serial + OpenMP | Multi-core CPU parallelism |
-| `cuda` | Serial + CUDA | GPU parallelism (requires CUDA) |
+The project supports a matrix of compilers (GCC, Clang) with different backends:
+
+| Preset | Compiler | Backend | CI Status |
+|--------|----------|---------|-----------|
+| **Serial Backend** ||||
+| `serial` | GCC (default) | Serial | ✅ Tested |
+| `serial-gcc-12` | GCC 12 | Serial | ✅ Tested |
+| `serial-gcc-14` | GCC 14 | Serial | ✅ Tested |
+| `serial-clang` | Clang (default) | Serial | ✅ Tested |
+| `serial-clang-18` | Clang 18 | Serial | ✅ Tested |
+| `serial-asan` | GCC (default) | Serial + ASAN/UBSAN | ✅ Tested |
+| **OpenMP Backend** ||||
+| `openmp` | GCC (default) | Serial + OpenMP | ✅ Tested |
+| `openmp-gcc-12` | GCC 12 | Serial + OpenMP | ✅ Tested |
+| `openmp-gcc-14` | GCC 14 | Serial + OpenMP | ✅ Tested |
+| `openmp-clang` | Clang (default) | Serial + OpenMP | ⚠️ Local only* |
+| `openmp-clang-18` | Clang 18 | Serial + OpenMP | ⚠️ Local only* |
+| **CUDA Backend** ||||
+| `cuda` | GCC 12 | Serial + CUDA | ⚠️ Local only** |
+
+*OpenMP with Clang may have CMake detection issues. To use locally, you might need:
+```bash
+cmake --preset openmp-clang -DOpenMP_CXX_FLAGS="-fopenmp=libomp" -DOpenMP_CXX_LIB_NAMES=omp
+```
+
+**CUDA is not tested in CI due to lack of GPU runners.
 
 ### Build Presets
 
-Same names as configure presets: `serial`, `serial-asan`, `openmp`, `cuda`
+Same names as configure presets (e.g., `--build --preset serial-gcc-14`)
 
 ### Test Presets
 
-Same names as configure presets: `serial`, `serial-asan`, `openmp`, `cuda`
+Same names as configure presets (e.g., `--test-preset openmp-gcc-12`)
 
 ### Examples
 

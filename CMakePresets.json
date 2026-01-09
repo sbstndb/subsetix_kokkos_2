@@ -7,20 +7,59 @@
   },
   "configurePresets": [
     {
-      "name": "base",
+      "name": "base-gcc",
       "hidden": true,
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build-${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++"
       }
     },
     {
-      "name": "serial",
-      "displayName": "Serial backend only",
-      "inherits": "base",
+      "name": "base-gcc-12",
+      "hidden": true,
+      "inherits": "base-gcc",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc-12",
+        "CMAKE_CXX_COMPILER": "g++-12"
+      }
+    },
+    {
+      "name": "base-gcc-14",
+      "hidden": true,
+      "inherits": "base-gcc",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc-14",
+        "CMAKE_CXX_COMPILER": "g++-14"
+      }
+    },
+    {
+      "name": "base-clang",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build-${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "base-clang-18",
+      "hidden": true,
+      "inherits": "base-clang",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang-18",
+        "CMAKE_CXX_COMPILER": "clang++-18"
+      }
+    },
+    {
+      "name": "backend-serial",
+      "hidden": true,
       "cacheVariables": {
         "SUBSETIX_KOKKOS_SERIAL": "ON",
         "SUBSETIX_KOKKOS_OPENMP": "OFF",
@@ -28,18 +67,8 @@
       }
     },
     {
-      "name": "serial-asan",
-      "displayName": "Serial with sanitizers",
-      "inherits": "serial",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "SUBSETIX_ENABLE_SANITIZERS": "ON"
-      }
-    },
-    {
-      "name": "openmp",
-      "displayName": "OpenMP backend",
-      "inherits": "base",
+      "name": "backend-openmp",
+      "hidden": true,
       "cacheVariables": {
         "SUBSETIX_KOKKOS_SERIAL": "ON",
         "SUBSETIX_KOKKOS_OPENMP": "ON",
@@ -47,14 +76,76 @@
       }
     },
     {
+      "name": "sanitizer-debug",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "SUBSETIX_ENABLE_SANITIZERS": "ON"
+      }
+    },
+    {
+      "name": "serial",
+      "displayName": "Serial (GCC default)",
+      "inherits": ["base-gcc", "backend-serial"]
+    },
+    {
+      "name": "serial-gcc-12",
+      "displayName": "Serial (GCC 12)",
+      "inherits": ["base-gcc-12", "backend-serial"]
+    },
+    {
+      "name": "serial-gcc-14",
+      "displayName": "Serial (GCC 14)",
+      "inherits": ["base-gcc-14", "backend-serial"]
+    },
+    {
+      "name": "serial-clang",
+      "displayName": "Serial (Clang default)",
+      "inherits": ["base-clang", "backend-serial"]
+    },
+    {
+      "name": "serial-clang-18",
+      "displayName": "Serial (Clang 18)",
+      "inherits": ["base-clang-18", "backend-serial"]
+    },
+    {
+      "name": "serial-asan",
+      "displayName": "Serial with sanitizers (GCC)",
+      "inherits": ["base-gcc", "backend-serial", "sanitizer-debug"]
+    },
+    {
+      "name": "openmp",
+      "displayName": "OpenMP (GCC default)",
+      "inherits": ["base-gcc", "backend-openmp"]
+    },
+    {
+      "name": "openmp-gcc-12",
+      "displayName": "OpenMP (GCC 12)",
+      "inherits": ["base-gcc-12", "backend-openmp"]
+    },
+    {
+      "name": "openmp-gcc-14",
+      "displayName": "OpenMP (GCC 14)",
+      "inherits": ["base-gcc-14", "backend-openmp"]
+    },
+    {
+      "name": "openmp-clang",
+      "displayName": "OpenMP (Clang default)",
+      "inherits": ["base-clang", "backend-openmp"]
+    },
+    {
+      "name": "openmp-clang-18",
+      "displayName": "OpenMP (Clang 18)",
+      "inherits": ["base-clang-18", "backend-openmp"]
+    },
+    {
       "name": "cuda",
-      "displayName": "CUDA backend with Serial host",
-      "inherits": "base",
+      "displayName": "CUDA backend with Serial host (GCC 12)",
+      "inherits": "base-gcc-12",
       "cacheVariables": {
         "SUBSETIX_KOKKOS_SERIAL": "ON",
         "SUBSETIX_KOKKOS_OPENMP": "OFF",
         "SUBSETIX_KOKKOS_CUDA": "ON",
-        "CMAKE_CXX_COMPILER": "g++-12",
         "CMAKE_CUDA_COMPILER": "nvcc",
         "CMAKE_CUDA_ARCHITECTURES": "80",
         "CMAKE_CUDA_FLAGS": "--expt-relaxed-constexpr",
@@ -68,12 +159,44 @@
       "configurePreset": "serial"
     },
     {
+      "name": "serial-gcc-12",
+      "configurePreset": "serial-gcc-12"
+    },
+    {
+      "name": "serial-gcc-14",
+      "configurePreset": "serial-gcc-14"
+    },
+    {
+      "name": "serial-clang",
+      "configurePreset": "serial-clang"
+    },
+    {
+      "name": "serial-clang-18",
+      "configurePreset": "serial-clang-18"
+    },
+    {
       "name": "serial-asan",
       "configurePreset": "serial-asan"
     },
     {
       "name": "openmp",
       "configurePreset": "openmp"
+    },
+    {
+      "name": "openmp-gcc-12",
+      "configurePreset": "openmp-gcc-12"
+    },
+    {
+      "name": "openmp-gcc-14",
+      "configurePreset": "openmp-gcc-14"
+    },
+    {
+      "name": "openmp-clang",
+      "configurePreset": "openmp-clang"
+    },
+    {
+      "name": "openmp-clang-18",
+      "configurePreset": "openmp-clang-18"
     },
     {
       "name": "cuda",
@@ -90,6 +213,38 @@
       }
     },
     {
+      "name": "serial-gcc-12",
+      "configurePreset": "serial-gcc-12",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "verbose"
+      }
+    },
+    {
+      "name": "serial-gcc-14",
+      "configurePreset": "serial-gcc-14",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "verbose"
+      }
+    },
+    {
+      "name": "serial-clang",
+      "configurePreset": "serial-clang",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "verbose"
+      }
+    },
+    {
+      "name": "serial-clang-18",
+      "configurePreset": "serial-clang-18",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "verbose"
+      }
+    },
+    {
       "name": "serial-asan",
       "configurePreset": "serial-asan",
       "output": {
@@ -100,6 +255,38 @@
     {
       "name": "openmp",
       "configurePreset": "openmp",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "verbose"
+      }
+    },
+    {
+      "name": "openmp-gcc-12",
+      "configurePreset": "openmp-gcc-12",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "verbose"
+      }
+    },
+    {
+      "name": "openmp-gcc-14",
+      "configurePreset": "openmp-gcc-14",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "verbose"
+      }
+    },
+    {
+      "name": "openmp-clang",
+      "configurePreset": "openmp-clang",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "verbose"
+      }
+    },
+    {
+      "name": "openmp-clang-18",
+      "configurePreset": "openmp-clang-18",
       "output": {
         "outputOnFailure": true,
         "verbosity": "verbose"
