@@ -1,0 +1,117 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build-${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_CXX_COMPILER": "g++"
+      }
+    },
+    {
+      "name": "serial",
+      "displayName": "Serial backend only",
+      "inherits": "base",
+      "cacheVariables": {
+        "SUBSETIX_KOKKOS_SERIAL": "ON",
+        "SUBSETIX_KOKKOS_OPENMP": "OFF",
+        "SUBSETIX_KOKKOS_CUDA": "OFF"
+      }
+    },
+    {
+      "name": "serial-asan",
+      "displayName": "Serial with sanitizers",
+      "inherits": "serial",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "SUBSETIX_ENABLE_SANITIZERS": "ON"
+      }
+    },
+    {
+      "name": "openmp",
+      "displayName": "OpenMP backend",
+      "inherits": "base",
+      "cacheVariables": {
+        "SUBSETIX_KOKKOS_SERIAL": "ON",
+        "SUBSETIX_KOKKOS_OPENMP": "ON",
+        "SUBSETIX_KOKKOS_CUDA": "OFF"
+      }
+    },
+    {
+      "name": "cuda",
+      "displayName": "CUDA backend with Serial host",
+      "inherits": "base",
+      "cacheVariables": {
+        "SUBSETIX_KOKKOS_SERIAL": "ON",
+        "SUBSETIX_KOKKOS_OPENMP": "OFF",
+        "SUBSETIX_KOKKOS_CUDA": "ON",
+        "CMAKE_CXX_COMPILER": "g++-12",
+        "CMAKE_CUDA_COMPILER": "nvcc",
+        "CMAKE_CUDA_ARCHITECTURES": "80",
+        "CMAKE_CUDA_FLAGS": "--expt-relaxed-constexpr",
+        "Kokkos_ENABLE_CUDA_LAMBDA": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "serial",
+      "configurePreset": "serial"
+    },
+    {
+      "name": "serial-asan",
+      "configurePreset": "serial-asan"
+    },
+    {
+      "name": "openmp",
+      "configurePreset": "openmp"
+    },
+    {
+      "name": "cuda",
+      "configurePreset": "cuda"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "serial",
+      "configurePreset": "serial",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "verbose"
+      }
+    },
+    {
+      "name": "serial-asan",
+      "configurePreset": "serial-asan",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "verbose"
+      }
+    },
+    {
+      "name": "openmp",
+      "configurePreset": "openmp",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "verbose"
+      }
+    },
+    {
+      "name": "cuda",
+      "configurePreset": "cuda",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "verbose"
+      }
+    }
+  ]
+}
