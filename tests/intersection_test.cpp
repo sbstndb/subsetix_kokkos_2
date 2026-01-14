@@ -80,8 +80,7 @@ Mesh3DHost run_intersection_to_host(
     const Mesh3DDevice& A,
     const Mesh3DDevice& B) {
 
-  IntersectionWorkspace ws;
-  Mesh3DDevice result = intersect_meshes(A, B, ws);
+  Mesh3DDevice result = intersect_meshes(A, B);
   return mesh_to<Kokkos::HostSpace>(result);
 }
 

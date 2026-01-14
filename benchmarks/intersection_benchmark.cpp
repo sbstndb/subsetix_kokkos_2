@@ -143,8 +143,7 @@ OverlappingMeshPair generate_overlapping_meshes(
 
 // Helper to run intersection (CUDA-safe)
 Mesh3DDevice bench_intersect(const Mesh3DDevice& A, const Mesh3DDevice& B) {
-  IntersectionWorkspace ws;
-  return intersect_meshes(A, B, ws);
+  return intersect_meshes(A, B);
 }
 
 // ============================================================================
