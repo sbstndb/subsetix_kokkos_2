@@ -6,6 +6,7 @@
 add_executable(subsetix_test_main
   test_main.cpp
   example_test.cpp
+  intersection_test.cpp
 )
 
 # Link libraries

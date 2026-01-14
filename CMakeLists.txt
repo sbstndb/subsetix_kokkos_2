@@ -26,6 +26,23 @@ endif()
 option(SUBSETIX_BUILD_TESTS "Build tests" ON)
 option(SUBSETIX_BUILD_BENCHMARKS "Build benchmarks" ON)
 
+# ============================================================================
+# Intersection Implementation Selection
+# ============================================================================
+
+option(SUBSETIX_ENABLE_INTERSECTION_V1 "Enable intersection v1" ON)
+option(SUBSETIX_ENABLE_INTERSECTION_V2 "Enable intersection v2 (future)" OFF)
+option(SUBSETIX_ENABLE_INTERSECTION_CUDA_OPT "Enable CUDA optimized intersection (future)" OFF)
+
+# Optional dependencies for alternative implementations
+option(SUBSETIX_USE_THRUST "Enable Thrust library for alternative implementations" OFF)
+option(SUBSETIX_USE_CUB "Enable CUB library for CUDA optimizations" OFF)
+
+# Validate that at least one intersection implementation is enabled
+if(NOT SUBSETIX_ENABLE_INTERSECTION_V1 AND NOT SUBSETIX_ENABLE_INTERSECTION_V2 AND NOT SUBSETIX_ENABLE_INTERSECTION_CUDA_OPT)
+  message(FATAL_ERROR "At least one intersection implementation must be enabled (V1, V2, or CUDA_OPT)")
+endif()
+
 option(SUBSETIX_ENABLE_SANITIZERS "Enable address and undefined behavior sanitizers" OFF)
 
 # ============================================================================
@@ -100,6 +117,42 @@ if(SUBSETIX_BUILD_BENCHMARKS)
   set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "")
 
   FetchContent_MakeAvailable(benchmark)
+endif()
+
+# ----------------------------------------------------------------------------
+# Optional dependencies for alternative implementations
+# ----------------------------------------------------------------------------
+
+# Thrust (for alternative implementations)
+if(SUBSETIX_USE_THRUST)
+  message(STATUS "Fetching Thrust (CUB) for alternative implementations...")
+
+  # Thrust is now included as part of CUDA toolkit, but we can also fetch it
+  # For non-CUDA builds, we fetch thrust separately
+  if(NOT SUBSETIX_KOKKOS_CUDA)
+    FetchContent_Declare(
+      thrust
+      GIT_REPOSITORY https://github.com/NVIDIA/thrust.git
+      GIT_TAG cuda-12.2.1
+      GIT_SHALLOW TRUE
+    )
+    FetchContent_MakeAvailable(thrust)
+  else()
+    message(STATUS "  Using Thrust from CUDA toolkit")
+  endif()
+endif()
+
+# CUB (for CUDA optimizations)
+if(SUBSETIX_USE_CUB)
+  message(STATUS "Fetching CUB for CUDA optimizations...")
+
+  FetchContent_Declare(
+    cub
+    GIT_REPOSITORY https://github.com/NVIDIA/cub.git
+    GIT_TAG 2.1.0
+    GIT_SHALLOW TRUE
+  )
+  FetchContent_MakeAvailable(cub)
 endif()
 
 # ============================================================================

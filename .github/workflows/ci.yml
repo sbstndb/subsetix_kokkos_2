@@ -54,15 +54,16 @@ jobs:
   # ============================================================================
   # Compiler Matrix Tests
   # ============================================================================
-  # Test matrix: compiler x backend
+  # Test matrix: compiler x backend x intersection_impl
   # serial-clang tests the default clang preset (issue #17 fix)
   test:
-    name: Test (${{ matrix.backend }}, ${{ matrix.compiler }})
+    name: Test (${{ matrix.backend }}, ${{ matrix.compiler }}, ${{ matrix.intersection_impl }})
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
+        intersection_impl: [v1]  # Will expand to [v1, v2, cuda_opt] when available
         include:
           # Serial backend
           - backend: serial
@@ -119,7 +120,9 @@ jobs:
             deps-${{ matrix.preset }}-
 
       - name: Configure CMake
-        run: cmake --preset ${{ matrix.preset }}
+        run: >
+          cmake --preset ${{ matrix.preset }}
+          -DSUBSETIX_ENABLE_INTERSECTION_${{ matrix.intersection_impl }}=ON
 
       - name: Build
         run: cmake --build --preset ${{ matrix.preset }} -- -j$(nproc)
