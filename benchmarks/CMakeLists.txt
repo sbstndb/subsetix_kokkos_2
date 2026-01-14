@@ -6,6 +6,7 @@
 add_executable(subsetix_benchmark_main
   benchmark_main.cpp
   example_benchmark.cpp
+  intersection_benchmark.cpp
 )
 
 # Link libraries
