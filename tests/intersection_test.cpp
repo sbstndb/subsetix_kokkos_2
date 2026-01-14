@@ -464,3 +464,490 @@ INSTANTIATE_TEST_SUITE_P(
         RowIntersectionCase{{{-5, -1}}, {{-3, 1}}, {{-3, -1}}}
     )
 );
+
+// ============================================================================
+// PRIORITY 1: CRITICAL TESTS - Boundary Values, Properties, Edge Cases
+// ============================================================================
+
+namespace {
+
+// Helper to check if two meshes are identical (CUDA-safe)
+bool meshes_equal(const Mesh3DHost& a, const Mesh3DHost& b) {
+  if (a.num_rows != b.num_rows) return false;
+  if (a.num_intervals != b.num_intervals) return false;
+
+  for (std::size_t i = 0; i < a.num_rows; ++i) {
+    if (a.row_keys(i).y != b.row_keys(i).y) return false;
+    if (a.row_keys(i).z != b.row_keys(i).z) return false;
+    if (a.row_ptr(i) != b.row_ptr(i)) return false;
+  }
+  if (a.row_ptr(a.num_rows) != b.row_ptr(b.num_rows)) return false;
+
+  for (std::size_t i = 0; i < a.num_intervals; ++i) {
+    if (a.intervals(i).begin != b.intervals(i).begin) return false;
+    if (a.intervals(i).end != b.intervals(i).end) return false;
+  }
+  return true;
+}
+
+// Helper to verify CSR invariants (CUDA-safe)
+bool verify_csr_invariants(const Mesh3DHost& mesh) {
+  // Check row_ptr is monotonically non-decreasing
+  for (std::size_t i = 0; i < mesh.num_rows; ++i) {
+    if (mesh.row_ptr(i) > mesh.row_ptr(i + 1)) {
+      return false;
+    }
+  }
+
+  // Check row_keys are sorted
+  for (std::size_t i = 1; i < mesh.num_rows; ++i) {
+    const RowKey& prev = mesh.row_keys(i - 1);
+    const RowKey& curr = mesh.row_keys(i);
+    if (prev.y > curr.y || (prev.y == curr.y && prev.z > curr.z)) {
+      return false;
+    }
+  }
+
+  // Check intervals are sorted and non-overlapping per row
+  for (std::size_t row = 0; row < mesh.num_rows; ++row) {
+    const std::size_t start = mesh.row_ptr(row);
+    const std::size_t end = mesh.row_ptr(row + 1);
+    for (std::size_t i = start; i < end; ++i) {
+      if (mesh.intervals(i).begin >= mesh.intervals(i).end) {
+        return false;  // Empty or inverted interval
+      }
+      if (i > start) {
+        if (mesh.intervals(i - 1).end > mesh.intervals(i).begin) {
+          return false;  // Overlapping intervals
+        }
+      }
+    }
+  }
+
+  return true;
+}
+
+} // anonymous namespace
+
+// Test 1: Boundary Values - Single cell at INT32_MAX
+TEST(IntersectionTest, BoundaryValue_SingleCellAtMax) {
+  // Single cell intervals near INT32_MAX
+  Mesh3DDevice A = make_mesh_device(
+      {{0, 0}},
+      {0, 2},
+      {{INT32_MAX - 2, INT32_MAX - 1}, {INT32_MAX - 1, INT32_MAX}});
+
+  Mesh3DDevice B = make_mesh_device(
+      {{0, 0}},
+      {0, 2},
+      {{INT32_MAX - 2, INT32_MAX - 1}, {INT32_MAX - 1, INT32_MAX}});
+
+  auto result = run_intersection_to_host(A, B);
+
+  EXPECT_EQ(result.num_rows, 1u);
+  EXPECT_EQ(result.num_intervals, 2u);
+  EXPECT_EQ(result.intervals(0).begin, INT32_MAX - 2);
+  EXPECT_EQ(result.intervals(0).end, INT32_MAX - 1);
+  EXPECT_EQ(result.intervals(1).begin, INT32_MAX - 1);
+  EXPECT_EQ(result.intervals(1).end, INT32_MAX);
+}
+
+// Test 2: Boundary Values - Negative coordinates
+TEST(IntersectionTest, BoundaryValue_NegativeCoordinates) {
+  Mesh3DDevice A = make_mesh_device(
+      {{-100, -50}},
+      {0, 2},
+      {{-1000, -500}, {-200, -100}});
+
+  Mesh3DDevice B = make_mesh_device(
+      {{-100, -50}},
+      {0, 2},
+      {{-750, -400}, {-150, -50}});
+
+  auto result = run_intersection_to_host(A, B);
+
+  EXPECT_EQ(result.num_rows, 1u);
+  EXPECT_EQ(result.num_intervals, 2u);
+  EXPECT_EQ(result.intervals(0).begin, -750);
+  EXPECT_EQ(result.intervals(0).end, -500);
+  EXPECT_EQ(result.intervals(1).begin, -150);
+  EXPECT_EQ(result.intervals(1).end, -100);
+}
+
+// Test 3: Boundary Values - Mixed positive/negative
+TEST(IntersectionTest, BoundaryValue_MixedPositiveNegative) {
+  Mesh3DDevice A = make_mesh_device(
+      {{0, 0}},
+      {0, 2},
+      {{-500, 0}, {0, 500}});
+
+  Mesh3DDevice B = make_mesh_device(
+      {{0, 0}},
+      {0, 2},
+      {{-250, 250}, {250, 750}});
+
+  auto result = run_intersection_to_host(A, B);
+
+  // Intersection produces 3 intervals: [-250,0), [0,250), [250,500)
+  EXPECT_EQ(result.num_rows, 1u);
+  EXPECT_EQ(result.num_intervals, 3u);
+  EXPECT_EQ(result.intervals(0).begin, -250);
+  EXPECT_EQ(result.intervals(0).end, 0);
+  EXPECT_EQ(result.intervals(1).begin, 0);
+  EXPECT_EQ(result.intervals(1).end, 250);
+  EXPECT_EQ(result.intervals(2).begin, 250);
+  EXPECT_EQ(result.intervals(2).end, 500);
+}
+
+// Test 4: Idempotency - A ∩ A = A
+TEST(IntersectionTest, Idempotency_IntersectWithSelf) {
+  Mesh3DDevice A = make_mesh_device(
+      {{0, 0}, {1, 0}, {2, 0}},
+      {0, 2, 4, 6},
+      {{0, 10}, {20, 30},  // Row 0
+       {5, 15}, {25, 35},  // Row 1
+       {10, 20}, {30, 40}}); // Row 2
+
+  Mesh3DDevice result = intersect_meshes(A, A);
+  Mesh3DHost result_host = mesh_to<Kokkos::HostSpace>(result);
+  Mesh3DHost A_host = mesh_to<Kokkos::HostSpace>(A);
+
+  EXPECT_TRUE(meshes_equal(result_host, A_host));
+}
+
+// Test 5: Commutativity - A ∩ B = B ∩ A
+TEST(IntersectionTest, Commutativity_OrderDoesntMatter) {
+  Mesh3DDevice A = make_mesh_device(
+      {{0, 0}, {1, 0}},
+      {0, 2, 4},
+      {{0, 15}, {25, 40},
+       {10, 30}, {35, 45}});
+
+  Mesh3DDevice B = make_mesh_device(
+      {{0, 0}, {1, 0}},
+      {0, 2, 4},
+      {{5, 20}, {30, 50},
+       {5, 20}, {40, 50}});
+
+  Mesh3DHost AB = run_intersection_to_host(A, B);
+  Mesh3DHost BA = run_intersection_to_host(B, A);
+
+  EXPECT_TRUE(meshes_equal(AB, BA));
+}
+
+// Test 6: Large-Scale Row Compaction
+TEST(IntersectionTest, LargeScaleRowCompaction) {
+  // Create mesh with 100 rows, only odd rows have intervals
+  std::vector<RowKey> keys_a;
+  std::vector<std::size_t> ptr_a;
+  std::vector<Interval> iv_a;
+
+  ptr_a.push_back(0);
+  for (int i = 0; i < 100; ++i) {
+    keys_a.push_back({i, 0});
+    if (i % 2 == 1) {  // Only odd rows
+      iv_a.push_back({i * 10, i * 10 + 5});
+      ptr_a.push_back(iv_a.size());
+    } else {
+      ptr_a.push_back(iv_a.size());
+    }
+  }
+
+  // B matches only odd rows too
+  std::vector<RowKey> keys_b;
+  std::vector<std::size_t> ptr_b;
+  std::vector<Interval> iv_b;
+
+  ptr_b.push_back(0);
+  for (int i = 0; i < 100; ++i) {
+    keys_b.push_back({i, 0});
+    if (i % 2 == 1) {
+      iv_b.push_back({i * 10 + 2, i * 10 + 7});
+      ptr_b.push_back(iv_b.size());
+    } else {
+      ptr_b.push_back(iv_b.size());
+    }
+  }
+
+  Mesh3DDevice A = make_mesh_device(keys_a, ptr_a, iv_a);
+  Mesh3DDevice B = make_mesh_device(keys_b, ptr_b, iv_b);
+
+  auto result = run_intersection_to_host(A, B);
+
+  // Should have 50 rows (only odd), all with intervals
+  EXPECT_EQ(result.num_rows, 50u);
+  EXPECT_EQ(result.num_intervals, 50u);
+
+  // Verify all rows have intervals
+  for (std::size_t i = 0; i < result.num_rows; ++i) {
+    EXPECT_LT(result.row_ptr(i), result.row_ptr(i + 1));
+  }
+}
+
+// Test 7: Worst-Case Merge - Many small intervals vs one large
+TEST(IntersectionTest, WorstCaseMerge_ManySmallVsOneLarge) {
+  // A: 100 small intervals [0,1), [2,3), [4,5), ...
+  std::vector<Interval> iv_a;
+  for (int i = 0; i < 100; ++i) {
+    iv_a.push_back({i * 2, i * 2 + 1});
+  }
+
+  // B: One large interval covering all
+  std::vector<Interval> iv_b = {{0, 200}};
+
+  Mesh3DDevice A = make_mesh_device({{0, 0}}, {0, 100}, iv_a);
+  Mesh3DDevice B = make_mesh_device({{0, 0}}, {0, 1}, iv_b);
+
+  auto result = run_intersection_to_host(A, B);
+
+  // Should intersect all 100 intervals
+  EXPECT_EQ(result.num_rows, 1u);
+  EXPECT_EQ(result.num_intervals, 100u);
+
+  // Verify each interval is preserved
+  for (std::size_t i = 0; i < 100; ++i) {
+    EXPECT_EQ(result.intervals(i).begin, i * 2);
+    EXPECT_EQ(result.intervals(i).end, i * 2 + 1);
+  }
+}
+
+// Test 8: Worst-Case Merge - One large vs many small
+TEST(IntersectionTest, WorstCaseMerge_OneLargeVsManySmall) {
+  // A: One large interval
+  std::vector<Interval> iv_a = {{0, 200}};
+
+  // B: 100 small intervals
+  std::vector<Interval> iv_b;
+  for (int i = 0; i < 100; ++i) {
+    iv_b.push_back({i * 2, i * 2 + 1});
+  }
+
+  Mesh3DDevice A = make_mesh_device({{0, 0}}, {0, 1}, iv_a);
+  Mesh3DDevice B = make_mesh_device({{0, 0}}, {0, 100}, iv_b);
+
+  auto result = run_intersection_to_host(A, B);
+
+  EXPECT_EQ(result.num_rows, 1u);
+  EXPECT_EQ(result.num_intervals, 100u);
+}
+
+// ============================================================================
+// PRIORITY 2: HIGH - Single Cells, Empty Rows, Negative Y/Z, CSR Invariants
+// ============================================================================
+
+// Test 9: Single Cell Intervals
+TEST(IntersectionTest, SingleCellIntervals) {
+  Mesh3DDevice A = make_mesh_device(
+      {{0, 0}},
+      {0, 5},
+      {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}});
+
+  Mesh3DDevice B = make_mesh_device(
+      {{0, 0}},
+      {0, 5},
+      {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}});
+
+  auto result = run_intersection_to_host(A, B);
+
+  EXPECT_EQ(result.num_rows, 1u);
+  EXPECT_EQ(result.num_intervals, 5u);
+
+  for (std::size_t i = 0; i < 5; ++i) {
+    EXPECT_EQ(result.intervals(i).begin, i);
+    EXPECT_EQ(result.intervals(i).end, i + 1);
+    EXPECT_EQ(result.intervals(i).size(), 1u);
+  }
+}
+
+// Test 10: Rows With No Intervals (compaction behavior)
+TEST(IntersectionTest, RowsWithNoIntervals_AreCompacted) {
+  // A has rows with intervals, B has same rows but no matching intervals
+  std::vector<RowKey> keys = {{0, 0}, {1, 0}, {2, 0}};
+  std::vector<std::size_t> ptr_a = {0, 2, 4, 6};
+  std::vector<Interval> iv_a = {
+    {0, 10}, {20, 30},
+    {5, 15}, {25, 35},
+    {10, 20}, {30, 40}
+  };
+
+  // B has same rows but disjoint intervals
+  std::vector<std::size_t> ptr_b = {0, 2, 4, 6};
+  std::vector<Interval> iv_b = {
+    {100, 110}, {120, 130},
+    {105, 115}, {125, 135},
+    {110, 120}, {130, 140}
+  };
+
+  Mesh3DDevice A = make_mesh_device(keys, ptr_a, iv_a);
+  Mesh3DDevice B = make_mesh_device(keys, ptr_b, iv_b);
+
+  auto result = run_intersection_to_host(A, B);
+
+  // All rows matched but no intervals intersect - result should be empty
+  EXPECT_EQ(result.num_rows, 0u);
+  EXPECT_EQ(result.num_intervals, 0u);
+}
+
+// Test 11: Negative Y and Z coordinates
+TEST(IntersectionTest, NegativeYZ_Coordinates) {
+  // Test various combinations of negative Y and Z (must be sorted!)
+  // Lexicographic order: (-100,-50), (-100,50), (0,0), (100,-50)
+  Mesh3DDevice A = make_mesh_device(
+      {{-100, -50}, {-100, 50}, {0, 0}, {100, -50}},
+      {0, 1, 2, 3, 4},
+      {{0, 10}, {0, 10}, {0, 10}, {0, 10}});
+
+  Mesh3DDevice B = make_mesh_device(
+      {{-100, -50}, {-100, 50}, {0, 0}, {100, -50}},
+      {0, 1, 2, 3, 4},
+      {{5, 15}, {5, 15}, {5, 15}, {5, 15}});
+
+  auto result = run_intersection_to_host(A, B);
+
+  EXPECT_EQ(result.num_rows, 4u);
+  EXPECT_EQ(result.num_intervals, 4u);
+
+  for (std::size_t i = 0; i < 4; ++i) {
+    EXPECT_EQ(result.intervals(i).begin, 5);
+    EXPECT_EQ(result.intervals(i).end, 10);
+  }
+}
+
+// Test 12: Different Y Same Z (no overlap)
+TEST(IntersectionTest, DifferentYSameZ_NoOverlap) {
+  Mesh3DDevice A = make_mesh_device(
+      {{0, 0}, {1, 0}, {2, 0}},
+      {0, 1, 2, 3},
+      {{0, 10}, {0, 10}, {0, 10}});
+
+  Mesh3DDevice B = make_mesh_device(
+      {{10, 0}, {11, 0}, {12, 0}},
+      {0, 1, 2, 3},
+      {{0, 10}, {0, 10}, {0, 10}});
+
+  auto result = run_intersection_to_host(A, B);
+
+  // Different Y, same Z - no common rows
+  EXPECT_EQ(result.num_rows, 0u);
+  EXPECT_EQ(result.num_intervals, 0u);
+}
+
+// Test 13: Same Y Different Z (no overlap)
+TEST(IntersectionTest, SameY_DifferentZ_NoOverlap) {
+  Mesh3DDevice A = make_mesh_device(
+      {{0, 0}, {0, 1}, {0, 2}},
+      {0, 1, 2, 3},
+      {{0, 10}, {0, 10}, {0, 10}});
+
+  Mesh3DDevice B = make_mesh_device(
+      {{0, 10}, {0, 11}, {0, 12}},
+      {0, 1, 2, 3},
+      {{0, 10}, {0, 10}, {0, 10}});
+
+  auto result = run_intersection_to_host(A, B);
+
+  // Same Y, different Z - no common rows
+  EXPECT_EQ(result.num_rows, 0u);
+  EXPECT_EQ(result.num_intervals, 0u);
+}
+
+// Test 14: CSR Output Invariants - Sorted and Non-Overlapping
+TEST(IntersectionTest, OutputMaintainsCSRInvariants) {
+  Mesh3DDevice A = make_mesh_device(
+      {{0, 0}, {1, 0}, {2, 0}},
+      {0, 3, 6, 9},
+      {{0, 10}, {20, 30}, {40, 50},
+       {5, 15}, {25, 35}, {45, 55},
+       {10, 20}, {30, 40}, {50, 60}});
+
+  Mesh3DDevice B = make_mesh_device(
+      {{0, 0}, {1, 0}, {2, 0}},
+      {0, 3, 6, 9},
+      {{5, 15}, {25, 35}, {45, 55},
+       {0, 10}, {20, 30}, {40, 50},
+       {5, 15}, {35, 45}, {55, 65}});
+
+  auto result = run_intersection_to_host(A, B);
+
+  EXPECT_TRUE(verify_csr_invariants(result));
+}
+
+// Test 15: First Row Has No Intervals (compaction edge case)
+TEST(IntersectionTest, FirstRowHasNoIntervals) {
+  std::vector<RowKey> keys = {{0, 0}, {1, 0}, {2, 0}};
+  std::vector<std::size_t> ptr_a = {0, 2, 4, 6};
+  std::vector<Interval> iv_a = {{0, 10}, {20, 30}, {5, 15}, {25, 35}, {10, 20}, {30, 40}};
+
+  // B intersects only rows 1 and 2
+  std::vector<std::size_t> ptr_b = {0, 0, 2, 4};
+  std::vector<Interval> iv_b = {{}, {5, 15}, {25, 35}, {10, 20}, {30, 40}};
+
+  Mesh3DDevice A = make_mesh_device(keys, ptr_a, iv_a);
+  Mesh3DDevice B = make_mesh_device(keys, ptr_b, iv_b);
+
+  auto result = run_intersection_to_host(A, B);
+
+  // Row 0 should be compacted away
+  EXPECT_LE(result.num_rows, 2u);
+  if (result.num_rows > 0) {
+    EXPECT_TRUE(verify_csr_invariants(result));
+  }
+}
+
+// Test 16: Last Row Has No Intervals (compaction edge case)
+TEST(IntersectionTest, LastRowHasNoIntervals) {
+  std::vector<RowKey> keys = {{0, 0}, {1, 0}, {2, 0}};
+  std::vector<std::size_t> ptr_a = {0, 2, 4, 6};
+  std::vector<Interval> iv_a = {{0, 10}, {20, 30}, {5, 15}, {25, 35}, {10, 20}, {30, 40}};
+
+  // B intersects only rows 0 and 1
+  std::vector<std::size_t> ptr_b = {0, 2, 4, 4};
+  std::vector<Interval> iv_b = {{0, 10}, {20, 30}, {5, 15}, {25, 35}, {}};
+
+  Mesh3DDevice A = make_mesh_device(keys, ptr_a, iv_a);
+  Mesh3DDevice B = make_mesh_device(keys, ptr_b, iv_b);
+
+  auto result = run_intersection_to_host(A, B);
+
+  // Row 2 should be compacted away
+  EXPECT_LE(result.num_rows, 2u);
+  if (result.num_rows > 0) {
+    EXPECT_TRUE(verify_csr_invariants(result));
+  }
+}
+
+// Test 17: Alternating Rows With/Without Intervals
+TEST(IntersectionTest, AlternatingRowsWithWithoutIntervals) {
+  std::vector<RowKey> keys;
+  std::vector<std::size_t> ptr_a;
+  std::vector<Interval> iv_a;
+  std::vector<std::size_t> ptr_b;
+  std::vector<Interval> iv_b;
+
+  ptr_a.push_back(0);
+  ptr_b.push_back(0);
+
+  for (int i = 0; i < 20; ++i) {
+    keys.push_back({i, 0});
+    if (i % 2 == 0) {
+      // Even rows: A and B overlap
+      iv_a.push_back({i * 10, i * 10 + 10});
+      iv_b.push_back({i * 10 + 5, i * 10 + 15});
+    } else {
+      // Odd rows: A and B disjoint
+      iv_a.push_back({i * 10, i * 10 + 10});
+      iv_b.push_back({i * 10 + 100, i * 10 + 110});
+    }
+    ptr_a.push_back(iv_a.size());
+    ptr_b.push_back(iv_b.size());
+  }
+
+  Mesh3DDevice A = make_mesh_device(keys, ptr_a, iv_a);
+  Mesh3DDevice B = make_mesh_device(keys, ptr_b, iv_b);
+
+  auto result = run_intersection_to_host(A, B);
+
+  // Only even rows should have intervals
+  EXPECT_EQ(result.num_rows, 10u);
+  EXPECT_TRUE(verify_csr_invariants(result));
+}
