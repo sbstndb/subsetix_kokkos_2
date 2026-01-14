@@ -343,4 +343,38 @@ BENCHMARK(BM_Intersection_DisjointRows)
     ->Arg(1000)
     ->Arg(10000);
 
+// ============================================================================
+// Benchmark: A ∩ A (idempotent) - Simple scaling test
+// ============================================================================
+
+static void BM_Intersection_Idempotent_Scaling(benchmark::State& state) {
+  const std::size_t n = static_cast<std::size_t>(state.range(0));
+
+  // Create mesh A with n rows, 1 interval per row
+  std::vector<RowKey> keys(n);
+  std::vector<std::size_t> ptr(n + 1);
+  std::vector<Interval> iv;
+
+  ptr[0] = 0;
+  for (std::size_t i = 0; i < n; ++i) {
+    keys[i] = {static_cast<Coord>(i), 0};
+    iv.push_back({static_cast<Coord>(i), static_cast<Coord>(i + 1)});
+    ptr[i + 1] = iv.size();
+  }
+
+  Mesh3DDevice A = make_mesh_device(keys, ptr, iv);
+
+  for (auto _ : state) {
+    auto result = bench_intersect(A, A);  // A ∩ A = A
+    benchmark::DoNotOptimize(result);
+  }
+
+  state.SetItemsProcessed(state.iterations() * n);
+}
+
+BENCHMARK(BM_Intersection_Idempotent_Scaling)
+    ->Arg(10)
+    ->Arg(100)
+    ->Arg(1000);
+
 } // anonymous namespace
