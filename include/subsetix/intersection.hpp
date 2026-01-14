@@ -208,8 +208,6 @@ inline Mesh3DDevice intersect_meshes(const Mesh3DDevice& A,
             Kokkos::View<Interval*, Kokkos::DefaultExecutionSpace::memory_space>(), 0);
       });
 
-  Kokkos::fence();
-
   // Phase 3: Scan to compute row_ptr offsets
   Kokkos::View<std::size_t, Kokkos::DefaultExecutionSpace::memory_space> total_view("total_intervals");
   Kokkos::parallel_scan(
@@ -226,8 +224,6 @@ inline Mesh3DDevice intersect_meshes(const Mesh3DDevice& A,
         }
         update += count;
       });
-
-  Kokkos::fence();
 
   std::size_t num_intervals_host = 0;
   Kokkos::deep_copy(num_intervals_host, total_view);
@@ -262,8 +258,6 @@ inline Mesh3DDevice intersect_meshes(const Mesh3DDevice& A,
             out.intervals, out.row_ptr(i));
       });
 
-  Kokkos::fence();
-
   // Phase 5: Compact - remove rows with no intervals
   Kokkos::View<int*, Kokkos::DefaultExecutionSpace::memory_space> has_intervals("has_intervals", num_rows_out);
   Kokkos::parallel_for(
@@ -272,8 +266,6 @@ inline Mesh3DDevice intersect_meshes(const Mesh3DDevice& A,
       KOKKOS_LAMBDA(const std::size_t i) {
         has_intervals(i) = (out.row_ptr(i) < out.row_ptr(i + 1)) ? 1 : 0;
       });
-
-  Kokkos::fence();
 
   Kokkos::View<std::size_t*, Kokkos::DefaultExecutionSpace::memory_space> new_positions("new_positions", num_rows_out);
   Kokkos::View<std::size_t, Kokkos::DefaultExecutionSpace::memory_space> final_num_rows_view("final_num_rows");
@@ -290,8 +282,6 @@ inline Mesh3DDevice intersect_meshes(const Mesh3DDevice& A,
         }
         update += count;
       });
-
-  Kokkos::fence();
 
   std::size_t final_num_rows = 0;
   Kokkos::deep_copy(final_num_rows, final_num_rows_view);
@@ -312,27 +302,24 @@ inline Mesh3DDevice intersect_meshes(const Mesh3DDevice& A,
   compacted.num_rows = final_num_rows;
   compacted.num_intervals = out.num_intervals;
 
-  // Copy row keys and row_ptr for non-empty rows
+  // Copy non-empty rows: one thread per SOURCE row (O(n) instead of O(n²))
   Kokkos::parallel_for(
       "intersection_compact_copy",
-      Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(0, final_num_rows + 1),
-      KOKKOS_LAMBDA(const std::size_t i) {
-        if (i == 0) {
-          compacted.row_ptr(0) = 0;
-        } else {
-          // Find the i-th non-empty row
-          std::size_t count = 0;
-          for (std::size_t j = 0; j < num_rows_out; ++j) {
-            if (has_intervals(j)) {
-              if (count == i) {
-                compacted.row_ptr(i) = out.row_ptr(j);
-                compacted.row_keys(i - 1) = out.row_keys(j);
-                break;
-              }
-              ++count;
-            }
-          }
+      Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(0, num_rows_out),
+      KOKKOS_LAMBDA(const std::size_t j) {
+        if (has_intervals(j)) {
+          const std::size_t new_pos = new_positions(j);
+          compacted.row_keys(new_pos) = out.row_keys(j);
+          compacted.row_ptr(new_pos) = out.row_ptr(j);
         }
+      });
+
+  // Set final row_ptr value
+  Kokkos::parallel_for(
+      "intersection_compact_final_ptr",
+      Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(0, 1),
+      KOKKOS_LAMBDA(const std::size_t) {
+        compacted.row_ptr(final_num_rows) = out.row_ptr(num_rows_out);
       });
 
   // Copy intervals
@@ -342,8 +329,6 @@ inline Mesh3DDevice intersect_meshes(const Mesh3DDevice& A,
       KOKKOS_LAMBDA(const std::size_t i) {
         compacted.intervals(i) = out.intervals(i);
       });
-
-  Kokkos::fence();
 
   return compacted;
 }
