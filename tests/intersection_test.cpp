@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 #include <subsetix/mesh.hpp>
-#include <subsetix/intersection.hpp>
+#include <subsetix/intersection/v1.hpp>
 
 #include <gtest/gtest.h>
 
@@ -16,6 +16,9 @@ namespace {
 // ============================================================================
 
 using namespace subsetix;
+// Import intersection v1 functions
+using subsetix::intersection::v1::intersect_meshes;
+using subsetix::intersection::v1::mesh_to;
 
 // Helper function to create a mesh from host data
 Mesh3DDevice make_mesh_device(

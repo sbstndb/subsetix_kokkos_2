@@ -6,7 +6,7 @@
 #include <subsetix/mesh.hpp>
 #include <subsetix/detail/utils.hpp>
 
-namespace subsetix {
+namespace subsetix::intersection::v1 {
 
 namespace detail {
 
@@ -101,7 +101,7 @@ inline Mesh3DDevice intersect_meshes(const Mesh3DDevice& A,
       Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(0, num_rows_a),
       KOKKOS_LAMBDA(const std::size_t i) {
         const RowKey key = rows_a(i);
-        const int idx_b = detail::find_row_by_yz(rows_b, num_rows_b, key.y, key.z);
+        const int idx_b = subsetix::detail::find_row_by_yz(rows_b, num_rows_b, key.y, key.z);
         if (idx_b >= 0) {
           flags(i) = 1;
           tmp_idx_a(i) = static_cast<int>(i);
@@ -195,7 +195,7 @@ inline Mesh3DDevice intersect_meshes(const Mesh3DDevice& A,
           return;
         }
 
-        const auto r = detail::extract_row_ranges(ia, ib, row_ptr_a, row_ptr_b);
+        const auto r = subsetix::detail::extract_row_ranges(ia, ib, row_ptr_a, row_ptr_b);
 
         if (r.begin_a == r.end_a || r.begin_b == r.end_b) {
           row_counts(i) = 0;
@@ -246,7 +246,7 @@ inline Mesh3DDevice intersect_meshes(const Mesh3DDevice& A,
           return;
         }
 
-        const auto r = detail::extract_row_ranges(ia, ib, row_ptr_a, row_ptr_b);
+        const auto r = subsetix::detail::extract_row_ranges(ia, ib, row_ptr_a, row_ptr_b);
 
         if (r.begin_a == r.end_a || r.begin_b == r.end_b) {
           return;
@@ -358,4 +358,4 @@ inline Mesh3D<ToSpace> mesh_to(const Mesh3D<FromSpace>& src) {
   return dst;
 }
 
-} // namespace subsetix
+} // namespace subsetix::intersection::v1

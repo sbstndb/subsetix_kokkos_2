@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 #include <subsetix/mesh.hpp>
-#include <subsetix/intersection.hpp>
+#include <subsetix/intersection/v1.hpp>
 
 #include <benchmark/benchmark.h>
 
@@ -11,6 +11,9 @@
 namespace {
 
 using namespace subsetix;
+// Import intersection v1 functions
+using subsetix::intersection::v1::intersect_meshes;
+using subsetix::intersection::v1::mesh_to;
 
 // ============================================================================
 // Benchmark helpers (CUDA-compatible)
@@ -56,22 +59,30 @@ Mesh3DDevice bench_intersect(const Mesh3DDevice& A, const Mesh3DDevice& B) {
 }
 
 // ============================================================================
-// Benchmark: A ∩ A (idempotent) - Simple scaling test
+// Benchmark: A ∩ A - 3D cube N×N×N
 // ============================================================================
 
-static void BM_Intersection_Idempotent_Scaling(benchmark::State& state) {
+static void BM_Intersection_Idempotent_3DCube(benchmark::State& state) {
   const std::size_t n = static_cast<std::size_t>(state.range(0));
+  const std::size_t n_cells = n * n * n;  // N³ cells total
 
-  // Create mesh A with n rows, 1 interval per row
-  std::vector<RowKey> keys(n);
-  std::vector<std::size_t> ptr(n + 1);
+  // Create mesh A with N×N rows (Y,Z combinations), 1 interval [0,N] per row (X)
+  // Total: N³ cells 3D
+  std::vector<RowKey> keys;
+  std::vector<std::size_t> ptr;
   std::vector<Interval> iv;
 
-  ptr[0] = 0;
-  for (std::size_t i = 0; i < n; ++i) {
-    keys[i] = {static_cast<Coord>(i), 0};
-    iv.push_back({static_cast<Coord>(i), static_cast<Coord>(i + 1)});
-    ptr[i + 1] = iv.size();
+  ptr.push_back(0);
+
+  // For each (Y, Z) combination
+  for (std::size_t y = 0; y < n; ++y) {
+    for (std::size_t z = 0; z < n; ++z) {
+      keys.push_back({static_cast<Coord>(y), static_cast<Coord>(z)});
+
+      // Single interval [0, N) covering entire X dimension
+      iv.push_back({0, static_cast<Coord>(n)});
+      ptr.push_back(iv.size());
+    }
   }
 
   Mesh3DDevice A = make_mesh_device(keys, ptr, iv);
@@ -81,12 +92,12 @@ static void BM_Intersection_Idempotent_Scaling(benchmark::State& state) {
     benchmark::DoNotOptimize(result);
   }
 
-  state.SetItemsProcessed(state.iterations() * n);
+  state.SetItemsProcessed(state.iterations() * n_cells);
 }
 
-BENCHMARK(BM_Intersection_Idempotent_Scaling)
-    ->Arg(10)
-    ->Arg(100)
-    ->Arg(1000);
+BENCHMARK(BM_Intersection_Idempotent_3DCube)
+    ->Arg(100)    // 100³ = 1,000,000 cells
+    ->Arg(1000)   // 1000³ = 1,000,000,000 cells
+    ->Arg(5000);  // 5000³ = 125,000,000,000 cells (~3.6 GB VRAM)
 
 } // anonymous namespace
